@@ -7,6 +7,9 @@ using Newtonsoft.Json;
 
 namespace PacenotesTaskTray
 {
+    /// <summary>
+    /// 環境ファイル項目の定義
+    /// </summary>
     [JsonObject("Setting")]
     class ClassSetting
     {

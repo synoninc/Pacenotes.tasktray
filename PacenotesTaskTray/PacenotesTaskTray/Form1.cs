@@ -13,6 +13,9 @@ using Newtonsoft.Json;
 
 namespace PacenotesTaskTray
 {
+    /// <summary>
+    /// 環境ファイル項目の設定フォーム
+    /// </summary>
     public partial class Form1 : Form
     {
         public Form1()
@@ -23,9 +26,9 @@ namespace PacenotesTaskTray
 
             var filePath = @"setting.json";
 
+            // ファイルの存在なしでデフォルト作成
             if (!File.Exists(filePath))
             {
-                // デフォルト作成
                 setting.Interval = 60;
                 setting.Target = "";
                 setting.LoginUrl = "http://api.pacenotes.io/api/login";
@@ -41,6 +44,7 @@ namespace PacenotesTaskTray
                 }
             }
 
+            // ファイルの読み込みで画面作成
             using (var sr = new StreamReader(filePath, System.Text.Encoding.UTF8))
             {
                 var jsonData = sr.ReadToEnd();
@@ -53,20 +57,26 @@ namespace PacenotesTaskTray
                 this.textPassword.Text = setting.Password;
                 this.textNotification.Text = setting.NotificationUrl;
             }
-
         }
 
+        /// <summary>
+        /// 閉じる処理
+        /// </summary>
         private void button2_Click(object sender, EventArgs e)
         {
             this.Close();
         }
 
+        /// <summary>
+        /// 保存処理
+        /// </summary>
         private void button1_Click(object sender, EventArgs e)
         {
             ClassSetting setting = new ClassSetting();
 
             var filePath = @"setting.json";
 
+            // 画面からファイルの書き出し
             int interval;
             if (int.TryParse(this.textInterval.Text, out interval))
             {
@@ -95,6 +105,9 @@ namespace PacenotesTaskTray
             }
         }
 
+        /// <summary>
+        /// フォルダー選択処理
+        /// </summary>
         private void buttonDialog_Click(object sender, EventArgs e)
         {
             FolderBrowserDialog fbd = new FolderBrowserDialog();
