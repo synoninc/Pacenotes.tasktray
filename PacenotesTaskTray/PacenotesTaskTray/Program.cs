@@ -9,6 +9,9 @@ using Newtonsoft.Json;
 using System.Timers;
 using System.Text;
 using System.Net;
+using System.Net.Sockets;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Collections;
 using Newtonsoft.Json.Linq;
 using NLog;
@@ -107,6 +110,46 @@ namespace PacenotesTaskTray
         private static System.Net.CookieContainer cContainer =
             new System.Net.CookieContainer();
 
+        private static Boolean RemoteCertificateValidationCallback(Object sender,
+            X509Certificate certificate,
+            X509Chain chain,
+            SslPolicyErrors sslPolicyErrors)
+        {
+            if (sslPolicyErrors == SslPolicyErrors.None)
+            {
+                return true;
+            }
+            else
+            {
+                return true;
+/*
+                //SslPolicyErrors列挙体には、Flags属性があるので、
+                //エラーの原因が複数含まれているかもしれない。
+                //そのため、&演算子で１つ１つエラーの原因を検出する。
+                if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) ==
+                    SslPolicyErrors.RemoteCertificateChainErrors)
+                {
+                    Console.WriteLine("ChainStatusが、空でない配列を返しました");
+                }
+
+                if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) ==
+                    SslPolicyErrors.RemoteCertificateNameMismatch)
+                {
+                    Console.WriteLine("証明書名が不一致です");
+                }
+
+                if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNotAvailable) ==
+                    SslPolicyErrors.RemoteCertificateNotAvailable)
+                {
+                    Console.WriteLine("証明書が利用できません");
+                }
+
+                //検証失敗とする
+                return false;
+*/
+            }
+        }
+
         /// <summary>
         /// API呼び出し処理
         /// </summary>
@@ -116,6 +159,11 @@ namespace PacenotesTaskTray
             {
                 string json = JsonConvert.SerializeObject(ht);
                 byte[] data = Encoding.ASCII.GetBytes(json);
+
+                if (System.Net.ServicePointManager.ServerCertificateValidationCallback == null)
+                {
+                    System.Net.ServicePointManager.ServerCertificateValidationCallback = RemoteCertificateValidationCallback;
+                }
 
                 // リクエストの作成
                 HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
@@ -148,7 +196,7 @@ namespace PacenotesTaskTray
 
                 return result;
             }
-            catch
+            catch (Exception ex)
             {
                 return null;
             }
@@ -220,11 +268,12 @@ namespace PacenotesTaskTray
                                         {
                                             // APIのログイン処理
                                             Hashtable ht = new Hashtable();
-                                            ht["user_name"] = this.username;
+                                            ht["username"] = this.username;
                                             ht["password"] = this.password;
                                             String result = requestServer(this.login, ht);
                                             JObject jResult = JObject.Parse(result);
-                                            if (jResult["code"].ToString() == "200")
+                                            Console.WriteLine(jResult["result"]);
+                                            if (jResult["result"].ToString() == "True")
                                             {
                                                 Exe_logger.Info("login completed");
                                                 Console.WriteLine("login completed");
@@ -232,11 +281,11 @@ namespace PacenotesTaskTray
                                                 // APIのコマンド実行処理
                                                 String argument = this.args;
                                                 Hashtable htExe = new Hashtable();
-                                                htExe["comamnd"] = this.command;
+                                                htExe["command"] = this.command;
                                                 htExe["args"] = argument.Replace("%count%", files.Length.ToString());
                                                 String resultExe = requestServer(this.notification, htExe);
                                                 JObject jResultExe = JObject.Parse(resultExe);
-                                                if (jResultExe["code"].ToString() == "200")
+                                                if (jResultExe["result"].ToString() == "True")
                                                 {
                                                     string param = "";
                                                     foreach (string k in files)
