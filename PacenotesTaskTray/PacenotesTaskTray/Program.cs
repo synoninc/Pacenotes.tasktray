@@ -84,6 +84,8 @@ namespace PacenotesTaskTray
         private string username = "";
         private string password = "";
         private string notification = "";
+        private string command = "";
+        private string args = "";
 
         private Logger Exe_logger = LogManager.GetCurrentClassLogger();
 
@@ -218,9 +220,9 @@ namespace PacenotesTaskTray
                                         {
                                             // APIのログイン処理
                                             Hashtable ht = new Hashtable();
-                                            ht["user_name"] = username;
-                                            ht["password"] = password;
-                                            String result = requestServer(login, ht);
+                                            ht["user_name"] = this.username;
+                                            ht["password"] = this.password;
+                                            String result = requestServer(this.login, ht);
                                             JObject jResult = JObject.Parse(result);
                                             if (jResult["code"].ToString() == "200")
                                             {
@@ -228,9 +230,11 @@ namespace PacenotesTaskTray
                                                 Console.WriteLine("login completed");
 
                                                 // APIのコマンド実行処理
+                                                String argument = this.args;
                                                 Hashtable htExe = new Hashtable();
-                                                htExe["count"] = files.Length;
-                                                String resultExe = requestServer(notification, htExe);
+                                                htExe["comamnd"] = this.command;
+                                                htExe["args"] = argument.Replace("%count%", files.Length.ToString());
+                                                String resultExe = requestServer(this.notification, htExe);
                                                 JObject jResultExe = JObject.Parse(resultExe);
                                                 if (jResultExe["code"].ToString() == "200")
                                                 {
@@ -312,6 +316,8 @@ namespace PacenotesTaskTray
                     this.username = setting.Username;
                     this.password = setting.Password;
                     this.notification = setting.NotificationUrl;
+                    this.command = setting.Command;
+                    this.args = setting.Args;
                 }
             }
         }

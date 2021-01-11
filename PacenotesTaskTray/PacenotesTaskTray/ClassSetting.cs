@@ -30,6 +30,12 @@ namespace PacenotesTaskTray
 
         [JsonProperty("Notification URL")]
         public string NotificationUrl { get; set; }
+
+        [JsonProperty("Command")]
+        public string Command { get; set; }
+
+        [JsonProperty("Args")]
+        public string Args { get; set; }
     }
 
 }

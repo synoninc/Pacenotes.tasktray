@@ -35,6 +35,8 @@ namespace PacenotesTaskTray
                 setting.Username = "admin";
                 setting.Password = "pacenotes";
                 setting.NotificationUrl = "http://api.pacenotes.io/api/command";
+                setting.Command = "";
+                setting.Args = "";
 
                 var jsonData = JsonConvert.SerializeObject(setting);
 
@@ -56,6 +58,8 @@ namespace PacenotesTaskTray
                 this.textUsername.Text = setting.Username;
                 this.textPassword.Text = setting.Password;
                 this.textNotification.Text = setting.NotificationUrl;
+                this.textCommand.Text = setting.Command;
+                this.textArgs.Text = setting.Args;
             }
         }
 
@@ -86,6 +90,8 @@ namespace PacenotesTaskTray
                 setting.Username = this.textUsername.Text;
                 setting.Password = this.textPassword.Text;
                 setting.NotificationUrl = this.textNotification.Text;
+                setting.Command = this.textCommand.Text;
+                setting.Args = this.textArgs.Text;
 
                 var jsonData = JsonConvert.SerializeObject(setting);
 
