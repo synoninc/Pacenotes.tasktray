@@ -19,6 +19,12 @@ namespace PacenotesTaskTray
         [JsonProperty("Target Directory")]
         public string Target { get; set; }
 
+        [JsonProperty("Target Directory2")]
+        public string Target2 { get; set; }
+
+        [JsonProperty("Target Directory3")]
+        public string Target3 { get; set; }
+
         [JsonProperty("Login URL")]
         public string LoginUrl { get; set; }
 

@@ -83,12 +83,16 @@ namespace PacenotesTaskTray
 
         private int interval = 60;
         private string target = "";
+        private string target2 = "";
+        private string target3 = "";
         private string login = "";
         private string username = "";
         private string password = "";
         private string notification = "";
         private string command = "";
         private string args = "";
+
+        private System.Timers.Timer timer;
 
         private Logger Exe_logger = LogManager.GetCurrentClassLogger();
 
@@ -99,6 +103,8 @@ namespace PacenotesTaskTray
         {
             this.ShowInTaskbar = false;
             this.setMenu();
+
+            this.timer = new System.Timers.Timer(1000);
 
             this.readSetting();
             this.setTimer();
@@ -122,31 +128,6 @@ namespace PacenotesTaskTray
             else
             {
                 return true;
-/*
-                //SslPolicyErrors列挙体には、Flags属性があるので、
-                //エラーの原因が複数含まれているかもしれない。
-                //そのため、&演算子で１つ１つエラーの原因を検出する。
-                if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) ==
-                    SslPolicyErrors.RemoteCertificateChainErrors)
-                {
-                    Console.WriteLine("ChainStatusが、空でない配列を返しました");
-                }
-
-                if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNameMismatch) ==
-                    SslPolicyErrors.RemoteCertificateNameMismatch)
-                {
-                    Console.WriteLine("証明書名が不一致です");
-                }
-
-                if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateNotAvailable) ==
-                    SslPolicyErrors.RemoteCertificateNotAvailable)
-                {
-                    Console.WriteLine("証明書が利用できません");
-                }
-
-                //検証失敗とする
-                return false;
-*/
             }
         }
 
@@ -207,8 +188,6 @@ namespace PacenotesTaskTray
         /// </summary>
         private void setTimer()
         {
-            System.Timers.Timer timer = new System.Timers.Timer(1000);
-
             int count = 0;
             int prevCount = -1;
             int targetCount = 0;
@@ -218,6 +197,8 @@ namespace PacenotesTaskTray
             }
             timer.Elapsed += (sender, e) =>
             {
+                Exe_logger.Info("(0) prevCount = " + prevCount);
+
                 // インターバルで実行
                 if (count >= interval)
                 {
@@ -235,8 +216,14 @@ namespace PacenotesTaskTray
                         targetCount = subFolders.Length;
                         Console.WriteLine("targetCount = " + targetCount);
                         Console.WriteLine("prevCount = " + prevCount);
+                        Exe_logger.Info("targetCount = " + targetCount);
+                        Exe_logger.Info("prevCount = " + prevCount);
                         if (prevCount != -1 && prevCount + 1 <= targetCount)
                         {
+                            Exe_logger.Info("(1) targetCount = " + targetCount);
+                            prevCount = targetCount;
+                            Exe_logger.Info("(1) prevCount = " + prevCount);
+
                             Exe_logger.Info("target folder = " + subFolders[subFolders.Length - 1]);
                             Console.WriteLine("target folder = " + subFolders[subFolders.Length-1]);
 
@@ -264,6 +251,8 @@ namespace PacenotesTaskTray
                                         targetCountSub = files.Length;
                                         Console.WriteLine("targetCountSub = " + targetCountSub);
                                         Console.WriteLine("prevCountSub = " + prevCountSub);
+                                        Exe_logger.Info("targetCountSub = " + targetCountSub);
+                                        Exe_logger.Info("prevCountSub = " + prevCountSub);
                                         if (prevCountSub != -1 && targetCountSub != 0 && prevCountSub == targetCountSub)
                                         {
                                             // APIのログイン処理
@@ -307,12 +296,22 @@ namespace PacenotesTaskTray
                                             }
 
                                             timerSub.Stop();
+
+                                            Exe_logger.Info("(3) targetCount = " + targetCount);
+                                            prevCount = targetCount;
+                                            Exe_logger.Info("(3) prevCount = " + prevCount);
+
                                             timer.Start();
                                         }
                                         if (prevCountSub != 0 && targetCountSub == 0)
                                         {
                                             Console.WriteLine("break sub");
                                             timerSub.Stop();
+
+                                            Exe_logger.Info("(4) targetCount = " + targetCount);
+                                            prevCount = targetCount;
+                                            Exe_logger.Info("(4) prevCount = " + prevCount);
+
                                             timer.Start();
                                         }
                                         prevCountSub = targetCountSub;
@@ -332,7 +331,9 @@ namespace PacenotesTaskTray
                             timerSub.Start();
                             timer.Stop();
                         }
+                        Exe_logger.Info("(2) targetCount = " + targetCount);
                         prevCount = targetCount;
+                        Exe_logger.Info("(2) prevCount = " + prevCount);
                     }
                 }
                 else
@@ -360,7 +361,9 @@ namespace PacenotesTaskTray
 
                     setting = JsonConvert.DeserializeObject<ClassSetting>(jsonData);
                     this.interval = setting.Interval;
-                    this.target= setting.Target;
+                    this.target = setting.Target;
+                    this.target2 = setting.Target2;
+                    this.target3 = setting.Target3;
                     this.login = setting.LoginUrl;
                     this.username = setting.Username;
                     this.password = setting.Password;

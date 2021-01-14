@@ -31,6 +31,8 @@ namespace PacenotesTaskTray
             {
                 setting.Interval = 60;
                 setting.Target = "";
+                setting.Target2 = "";
+                setting.Target3 = "";
                 setting.LoginUrl = "http://api.pacenotes.io/api/login";
                 setting.Username = "admin";
                 setting.Password = "pacenotes";
@@ -54,6 +56,8 @@ namespace PacenotesTaskTray
                 setting = JsonConvert.DeserializeObject<ClassSetting>(jsonData);
                 this.textInterval.Text = setting.Interval.ToString();
                 this.textTarget.Text = setting.Target;
+                this.textTarget2.Text = setting.Target2;
+                this.textTarget3.Text = setting.Target3;
                 this.textLogin.Text = setting.LoginUrl;
                 this.textUsername.Text = setting.Username;
                 this.textPassword.Text = setting.Password;
@@ -86,6 +90,8 @@ namespace PacenotesTaskTray
             {
                 setting.Interval = interval;
                 setting.Target = this.textTarget.Text;
+                setting.Target2 = this.textTarget2.Text;
+                setting.Target3 = this.textTarget3.Text;
                 setting.LoginUrl = this.textLogin.Text;
                 setting.Username = this.textUsername.Text;
                 setting.Password = this.textPassword.Text;
