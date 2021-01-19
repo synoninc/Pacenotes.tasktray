@@ -134,5 +134,35 @@ namespace PacenotesTaskTray
                 this.textTarget.Text = fbd.SelectedPath;
             }
         }
+
+        private void buttonDialog2_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog fbd = new FolderBrowserDialog();
+
+            fbd.Description = "監視するフォルダ2を指定してください。";
+            fbd.RootFolder = Environment.SpecialFolder.Desktop;
+            fbd.SelectedPath = @"C:\\";
+            fbd.ShowNewFolderButton = false;
+
+            if (fbd.ShowDialog(this) == DialogResult.OK)
+            {
+                this.textTarget2.Text = fbd.SelectedPath;
+            }
+        }
+
+        private void buttonDialog3_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog fbd = new FolderBrowserDialog();
+
+            fbd.Description = "監視するフォルダ3を指定してください。";
+            fbd.RootFolder = Environment.SpecialFolder.Desktop;
+            fbd.SelectedPath = @"C:\\";
+            fbd.ShowNewFolderButton = false;
+
+            if (fbd.ShowDialog(this) == DialogResult.OK)
+            {
+                this.textTarget3.Text = fbd.SelectedPath;
+            }
+        }
     }
 }

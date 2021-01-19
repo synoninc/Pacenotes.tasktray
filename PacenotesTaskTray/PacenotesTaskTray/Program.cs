@@ -32,15 +32,43 @@ namespace PacenotesTaskTray
             // NLogの初期化
             InitializeLogger();
 
-            // メニューの初期化
-            ResidentMenu rm = new ResidentMenu();
-            Application.Run();
+            string mutexName = "wsMain";
+            System.Threading.Mutex mutex = new System.Threading.Mutex(false, mutexName);
 
-            /*
-                        Application.EnableVisualStyles();
-                        Application.SetCompatibleTextRenderingDefault(false);
-                        Application.Run(new Form1());
-            */
+            bool hasHandle = false;
+            try
+            {
+                try
+                {
+                    hasHandle = mutex.WaitOne(0, false);
+                }
+                catch (System.Threading.AbandonedMutexException)
+                {
+                    hasHandle = true;
+                }
+                if (hasHandle == false)
+                {
+                    MessageBox.Show("多重起動はできません。", "PacenotesTaskTray");
+                    return;
+                }
+                /*
+                            Application.EnableVisualStyles();
+                            Application.SetCompatibleTextRenderingDefault(false);
+                            Application.Run(new Form1());
+                */
+                // メニューの初期化
+                ResidentMenu rm = new ResidentMenu();
+                Application.Run();
+
+            }
+            finally
+            {
+                if (hasHandle)
+                {
+                    mutex.ReleaseMutex();
+                }
+                mutex.Close();
+            }
         }
 
         /// <summary>
@@ -50,7 +78,6 @@ namespace PacenotesTaskTray
         {
             var conf = new LoggingConfiguration();
 
-            // ファイル形式、shift-jisコードで/log/execute_yyyyMMdd.log型式で7つ(一週間)保存する
             var file = new FileTarget("file");
             file.Encoding = System.Text.Encoding.GetEncoding("shift-jis");
             file.Layout = "${longdate} [${threadid:padding=2}] [${uppercase:${level:padding=-5}}] ${callsite}() - ${message}${exception:format=ToString}";
@@ -93,6 +120,8 @@ namespace PacenotesTaskTray
         private string args = "";
 
         private System.Timers.Timer timer;
+        private System.Timers.Timer timer2;
+        private System.Timers.Timer timer3;
 
         private Logger Exe_logger = LogManager.GetCurrentClassLogger();
 
@@ -105,9 +134,13 @@ namespace PacenotesTaskTray
             this.setMenu();
 
             this.timer = new System.Timers.Timer(1000);
+            this.timer2 = new System.Timers.Timer(1000);
+            this.timer3 = new System.Timers.Timer(1000);
 
             this.readSetting();
             this.setTimer();
+            this.setTimer2();
+            this.setTimer3();
         }
 
         /// <summary>
@@ -197,14 +230,14 @@ namespace PacenotesTaskTray
             }
             timer.Elapsed += (sender, e) =>
             {
-                Exe_logger.Info("(0) prevCount = " + prevCount);
+                Exe_logger.Info("[1] (0) prevCount = " + prevCount);
 
                 // インターバルで実行
                 if (count >= interval)
                 {
                     count = 0;
 
-                    Exe_logger.Info("execute timer");
+                    Exe_logger.Info("[1] execute timer");
                     if (target != "")
                     {
                         // ターゲットフォルダーのフォルダー一覧の取得
@@ -214,18 +247,18 @@ namespace PacenotesTaskTray
 
                         // 新規フォルダーの確認
                         targetCount = subFolders.Length;
-                        Console.WriteLine("targetCount = " + targetCount);
-                        Console.WriteLine("prevCount = " + prevCount);
-                        Exe_logger.Info("targetCount = " + targetCount);
-                        Exe_logger.Info("prevCount = " + prevCount);
+                        Console.WriteLine("[1] targetCount = " + targetCount);
+                        Console.WriteLine("[1] prevCount = " + prevCount);
+                        Exe_logger.Info("[1] targetCount = " + targetCount);
+                        Exe_logger.Info("[1] prevCount = " + prevCount);
                         if (prevCount != -1 && prevCount + 1 <= targetCount)
                         {
-                            Exe_logger.Info("(1) targetCount = " + targetCount);
+                            Exe_logger.Info("[1] (1) targetCount = " + targetCount);
                             prevCount = targetCount;
-                            Exe_logger.Info("(1) prevCount = " + prevCount);
+                            Exe_logger.Info("[1] (1) prevCount = " + prevCount);
 
-                            Exe_logger.Info("target folder = " + subFolders[subFolders.Length - 1]);
-                            Console.WriteLine("target folder = " + subFolders[subFolders.Length-1]);
+                            Exe_logger.Info("[1] target folder = " + subFolders[subFolders.Length - 1]);
+                            Console.WriteLine("[1] target folder = " + subFolders[subFolders.Length-1]);
 
                             // タイマーの起動
                             System.Timers.Timer timerSub = new System.Timers.Timer(1000);
@@ -245,14 +278,14 @@ namespace PacenotesTaskTray
                                         // pdfファイルの取得
                                         string[] files = Directory.GetFiles(target + "\\" + subFolders[subFolders.Length - 1], "*.pdf");
 
-                                        Exe_logger.Info("execute sub timer (" + files.Length.ToString() + ")");
+                                        Exe_logger.Info("[1] execute sub timer (" + files.Length.ToString() + ")");
 
                                         // ファイル数の変化なしの確認
                                         targetCountSub = files.Length;
-                                        Console.WriteLine("targetCountSub = " + targetCountSub);
-                                        Console.WriteLine("prevCountSub = " + prevCountSub);
-                                        Exe_logger.Info("targetCountSub = " + targetCountSub);
-                                        Exe_logger.Info("prevCountSub = " + prevCountSub);
+                                        Console.WriteLine("[1] targetCountSub = " + targetCountSub);
+                                        Console.WriteLine("[1] prevCountSub = " + prevCountSub);
+                                        Exe_logger.Info("[1] targetCountSub = " + targetCountSub);
+                                        Exe_logger.Info("[1] prevCountSub = " + prevCountSub);
                                         if (prevCountSub != -1 && targetCountSub != 0 && prevCountSub == targetCountSub)
                                         {
                                             // APIのログイン処理
@@ -264,14 +297,14 @@ namespace PacenotesTaskTray
                                             Console.WriteLine(jResult["result"]);
                                             if (jResult["result"].ToString() == "True")
                                             {
-                                                Exe_logger.Info("login completed");
-                                                Console.WriteLine("login completed");
+                                                Exe_logger.Info("[1] login completed");
+                                                Console.WriteLine("[1] login completed");
 
                                                 // APIのコマンド実行処理
                                                 String argument = this.args;
                                                 Hashtable htExe = new Hashtable();
                                                 htExe["command"] = this.command;
-                                                htExe["args"] = argument.Replace("%count%", files.Length.ToString());
+                                                htExe["args"] = argument.Replace("%target%", "1").Replace("%count%", files.Length.ToString());
                                                 String resultExe = requestServer(this.notification, htExe);
                                                 JObject jResultExe = JObject.Parse(resultExe);
                                                 if (jResultExe["result"].ToString() == "True")
@@ -282,35 +315,35 @@ namespace PacenotesTaskTray
                                                         param += String.Format("{0},", k);
                                                     }
 
-                                                    Exe_logger.Info("execute completed (" + files.Length.ToString() + ") : " + param);
-                                                    Console.WriteLine("execute completed (" + files.Length.ToString() + ") : " + param);
+                                                    Exe_logger.Info("[1] execute completed (" + files.Length.ToString() + ") : " + param);
+                                                    Console.WriteLine("[1] execute completed (" + files.Length.ToString() + ") : " + param);
                                                 }
                                                 else
                                                 {
-                                                    Exe_logger.Error("execute erro : " + resultExe);
+                                                    Exe_logger.Error("[1] execute erro : " + resultExe);
                                                 }
                                             }
                                             else
                                             {
-                                                Exe_logger.Error("login error : " + result);
+                                                Exe_logger.Error("[1] login error : " + result);
                                             }
 
                                             timerSub.Stop();
 
-                                            Exe_logger.Info("(3) targetCount = " + targetCount);
+                                            Exe_logger.Info("[1] (3) targetCount = " + targetCount);
                                             prevCount = targetCount;
-                                            Exe_logger.Info("(3) prevCount = " + prevCount);
+                                            Exe_logger.Info("[1] (3) prevCount = " + prevCount);
 
                                             timer.Start();
                                         }
                                         if (prevCountSub != 0 && targetCountSub == 0)
                                         {
-                                            Console.WriteLine("break sub");
+                                            Console.WriteLine("[1] break sub");
                                             timerSub.Stop();
 
-                                            Exe_logger.Info("(4) targetCount = " + targetCount);
+                                            Exe_logger.Info("[1] (4) targetCount = " + targetCount);
                                             prevCount = targetCount;
-                                            Exe_logger.Info("(4) prevCount = " + prevCount);
+                                            Exe_logger.Info("[1] (4) prevCount = " + prevCount);
 
                                             timer.Start();
                                         }
@@ -318,7 +351,7 @@ namespace PacenotesTaskTray
                                     }
                                     catch (Exception ex)
                                     {
-                                        Exe_logger.Error("exception error : " + ex);
+                                        Exe_logger.Error("[1] exception error : " + ex);
 
                                         subFolders = di.GetDirectories("*", System.IO.SearchOption.AllDirectories);
                                     }
@@ -331,9 +364,9 @@ namespace PacenotesTaskTray
                             timerSub.Start();
                             timer.Stop();
                         }
-                        Exe_logger.Info("(2) targetCount = " + targetCount);
+                        Exe_logger.Info("[1] (2) targetCount = " + targetCount);
                         prevCount = targetCount;
-                        Exe_logger.Info("(2) prevCount = " + prevCount);
+                        Exe_logger.Info("[1] (2) prevCount = " + prevCount);
                     }
                 }
                 else
@@ -342,6 +375,328 @@ namespace PacenotesTaskTray
                 }
             };
             timer.Start();
+        }
+
+        /// <summary>
+        /// 監視タイマー処理
+        /// </summary>
+        private void setTimer2()
+        {
+            int count = 0;
+            int prevCount = -1;
+            int targetCount = 0;
+            if (timer2.Enabled)
+            {
+                timer2.Stop();
+            }
+            timer2.Elapsed += (sender, e) =>
+            {
+                Exe_logger.Info("[2] (0) prevCount = " + prevCount);
+
+                // インターバルで実行
+                if (count >= interval)
+                {
+                    count = 0;
+
+                    Exe_logger.Info("[2] execute timer");
+                    if (target2 != "")
+                    {
+                        // ターゲットフォルダーのフォルダー一覧の取得
+                        System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(target2);
+                        System.IO.DirectoryInfo[] subFolders =
+                            di.GetDirectories("*", System.IO.SearchOption.AllDirectories);
+
+                        // 新規フォルダーの確認
+                        targetCount = subFolders.Length;
+                        Console.WriteLine("[2] targetCount = " + targetCount);
+                        Console.WriteLine("[2] prevCount = " + prevCount);
+                        Exe_logger.Info("[2] targetCount = " + targetCount);
+                        Exe_logger.Info("[2] prevCount = " + prevCount);
+                        if (prevCount != -1 && prevCount + 1 <= targetCount)
+                        {
+                            Exe_logger.Info("[2] (1) targetCount = " + targetCount);
+                            prevCount = targetCount;
+                            Exe_logger.Info("[2] (1) prevCount = " + prevCount);
+
+                            Exe_logger.Info("[2] target folder = " + subFolders[subFolders.Length - 1]);
+                            Console.WriteLine("[2] target folder = " + subFolders[subFolders.Length - 1]);
+
+                            // タイマーの起動
+                            System.Timers.Timer timerSub = new System.Timers.Timer(1000);
+
+                            int countSub = 0;
+                            int prevCountSub = -1;
+                            int targetCountSub = 0;
+                            timerSub.Elapsed += (senderSub, eSub) =>
+                            {
+                                // インターバルで実行
+                                if (countSub >= interval)
+                                {
+                                    countSub = 0;
+
+                                    try
+                                    {
+                                        // pdfファイルの取得
+                                        string[] files = Directory.GetFiles(target2 + "\\" + subFolders[subFolders.Length - 1], "*.pdf");
+
+                                        Exe_logger.Info("[2] execute sub timer (" + files.Length.ToString() + ")");
+
+                                        // ファイル数の変化なしの確認
+                                        targetCountSub = files.Length;
+                                        Console.WriteLine("[2] targetCountSub = " + targetCountSub);
+                                        Console.WriteLine("[2] prevCountSub = " + prevCountSub);
+                                        Exe_logger.Info("[2] targetCountSub = " + targetCountSub);
+                                        Exe_logger.Info("[2] prevCountSub = " + prevCountSub);
+                                        if (prevCountSub != -1 && targetCountSub != 0 && prevCountSub == targetCountSub)
+                                        {
+                                            // APIのログイン処理
+                                            Hashtable ht = new Hashtable();
+                                            ht["username"] = this.username;
+                                            ht["password"] = this.password;
+                                            String result = requestServer(this.login, ht);
+                                            JObject jResult = JObject.Parse(result);
+                                            Console.WriteLine(jResult["result"]);
+                                            if (jResult["result"].ToString() == "True")
+                                            {
+                                                Exe_logger.Info("[2] login completed");
+                                                Console.WriteLine("[2] login completed");
+
+                                                // APIのコマンド実行処理
+                                                String argument = this.args;
+                                                Hashtable htExe = new Hashtable();
+                                                htExe["command"] = this.command;
+                                                htExe["args"] = argument.Replace("%target%", "2").Replace("%count%", files.Length.ToString());
+                                                String resultExe = requestServer(this.notification, htExe);
+                                                JObject jResultExe = JObject.Parse(resultExe);
+                                                if (jResultExe["result"].ToString() == "True")
+                                                {
+                                                    string param = "";
+                                                    foreach (string k in files)
+                                                    {
+                                                        param += String.Format("{0},", k);
+                                                    }
+
+                                                    Exe_logger.Info("[2] execute completed (" + files.Length.ToString() + ") : " + param);
+                                                    Console.WriteLine("[2] execute completed (" + files.Length.ToString() + ") : " + param);
+                                                }
+                                                else
+                                                {
+                                                    Exe_logger.Error("[2] execute erro : " + resultExe);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                Exe_logger.Error("[2] login error : " + result);
+                                            }
+
+                                            timerSub.Stop();
+
+                                            Exe_logger.Info("[2] (3) targetCount = " + targetCount);
+                                            prevCount = targetCount;
+                                            Exe_logger.Info("[2] (3) prevCount = " + prevCount);
+
+                                            timer2.Start();
+                                        }
+                                        if (prevCountSub != 0 && targetCountSub == 0)
+                                        {
+                                            Console.WriteLine("[2] break sub");
+                                            timerSub.Stop();
+
+                                            Exe_logger.Info("[2] (4) targetCount = " + targetCount);
+                                            prevCount = targetCount;
+                                            Exe_logger.Info("[2] (4) prevCount = " + prevCount);
+
+                                            timer.Start();
+                                        }
+                                        prevCountSub = targetCountSub;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Exe_logger.Error("[2] exception error : " + ex);
+
+                                        subFolders = di.GetDirectories("*", System.IO.SearchOption.AllDirectories);
+                                    }
+                                }
+                                else
+                                {
+                                    countSub++;
+                                }
+                            };
+                            timerSub.Start();
+                            timer2.Stop();
+                        }
+                        Exe_logger.Info("[2] (2) targetCount = " + targetCount);
+                        prevCount = targetCount;
+                        Exe_logger.Info("[2] (2) prevCount = " + prevCount);
+                    }
+                }
+                else
+                {
+                    count++;
+                }
+            };
+            timer2.Start();
+        }
+
+        /// <summary>
+        /// 監視タイマー処理
+        /// </summary>
+        private void setTimer3()
+        {
+            int count = 0;
+            int prevCount = -1;
+            int targetCount = 0;
+            if (timer3.Enabled)
+            {
+                timer3.Stop();
+            }
+            timer3.Elapsed += (sender, e) =>
+            {
+                Exe_logger.Info("[3] (0) prevCount = " + prevCount);
+
+                // インターバルで実行
+                if (count >= interval)
+                {
+                    count = 0;
+
+                    Exe_logger.Info("[3] execute timer");
+                    if (target3 != "")
+                    {
+                        // ターゲットフォルダーのフォルダー一覧の取得
+                        System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(target3);
+                        System.IO.DirectoryInfo[] subFolders =
+                            di.GetDirectories("*", System.IO.SearchOption.AllDirectories);
+
+                        // 新規フォルダーの確認
+                        targetCount = subFolders.Length;
+                        Console.WriteLine("[3] targetCount = " + targetCount);
+                        Console.WriteLine("[3] prevCount = " + prevCount);
+                        Exe_logger.Info("[3] targetCount = " + targetCount);
+                        Exe_logger.Info("[3] prevCount = " + prevCount);
+                        if (prevCount != -1 && prevCount + 1 <= targetCount)
+                        {
+                            Exe_logger.Info("[3] (1) targetCount = " + targetCount);
+                            prevCount = targetCount;
+                            Exe_logger.Info("[3] (1) prevCount = " + prevCount);
+
+                            Exe_logger.Info("[3] target folder = " + subFolders[subFolders.Length - 1]);
+                            Console.WriteLine("[3] target folder = " + subFolders[subFolders.Length - 1]);
+
+                            // タイマーの起動
+                            System.Timers.Timer timerSub = new System.Timers.Timer(1000);
+
+                            int countSub = 0;
+                            int prevCountSub = -1;
+                            int targetCountSub = 0;
+                            timerSub.Elapsed += (senderSub, eSub) =>
+                            {
+                                // インターバルで実行
+                                if (countSub >= interval)
+                                {
+                                    countSub = 0;
+
+                                    try
+                                    {
+                                        // pdfファイルの取得
+                                        string[] files = Directory.GetFiles(target3 + "\\" + subFolders[subFolders.Length - 1], "*.pdf");
+
+                                        Exe_logger.Info("[3] execute sub timer (" + files.Length.ToString() + ")");
+
+                                        // ファイル数の変化なしの確認
+                                        targetCountSub = files.Length;
+                                        Console.WriteLine("[3] targetCountSub = " + targetCountSub);
+                                        Console.WriteLine("[3] prevCountSub = " + prevCountSub);
+                                        Exe_logger.Info("[3] targetCountSub = " + targetCountSub);
+                                        Exe_logger.Info("[3] prevCountSub = " + prevCountSub);
+                                        if (prevCountSub != -1 && targetCountSub != 0 && prevCountSub == targetCountSub)
+                                        {
+                                            // APIのログイン処理
+                                            Hashtable ht = new Hashtable();
+                                            ht["username"] = this.username;
+                                            ht["password"] = this.password;
+                                            String result = requestServer(this.login, ht);
+                                            JObject jResult = JObject.Parse(result);
+                                            Console.WriteLine(jResult["result"]);
+                                            if (jResult["result"].ToString() == "True")
+                                            {
+                                                Exe_logger.Info("[3] login completed");
+                                                Console.WriteLine("[3] login completed");
+
+                                                // APIのコマンド実行処理
+                                                String argument = this.args;
+                                                Hashtable htExe = new Hashtable();
+                                                htExe["command"] = this.command;
+                                                htExe["args"] = argument.Replace("%target%", "3").Replace("%count%", files.Length.ToString());
+                                                String resultExe = requestServer(this.notification, htExe);
+                                                JObject jResultExe = JObject.Parse(resultExe);
+                                                if (jResultExe["result"].ToString() == "True")
+                                                {
+                                                    string param = "";
+                                                    foreach (string k in files)
+                                                    {
+                                                        param += String.Format("{0},", k);
+                                                    }
+
+                                                    Exe_logger.Info("[3] execute completed (" + files.Length.ToString() + ") : " + param);
+                                                    Console.WriteLine("[3] execute completed (" + files.Length.ToString() + ") : " + param);
+                                                }
+                                                else
+                                                {
+                                                    Exe_logger.Error("[3] execute erro : " + resultExe);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                Exe_logger.Error("[3] login error : " + result);
+                                            }
+
+                                            timerSub.Stop();
+
+                                            Exe_logger.Info("[3] (3) targetCount = " + targetCount);
+                                            prevCount = targetCount;
+                                            Exe_logger.Info("[3] (3) prevCount = " + prevCount);
+
+                                            timer3.Start();
+                                        }
+                                        if (prevCountSub != 0 && targetCountSub == 0)
+                                        {
+                                            Console.WriteLine("[3] break sub");
+                                            timerSub.Stop();
+
+                                            Exe_logger.Info("[3] (4) targetCount = " + targetCount);
+                                            prevCount = targetCount;
+                                            Exe_logger.Info("[3] (4) prevCount = " + prevCount);
+
+                                            timer3.Start();
+                                        }
+                                        prevCountSub = targetCountSub;
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Exe_logger.Error("[3] exception error : " + ex);
+
+                                        subFolders = di.GetDirectories("*", System.IO.SearchOption.AllDirectories);
+                                    }
+                                }
+                                else
+                                {
+                                    countSub++;
+                                }
+                            };
+                            timerSub.Start();
+                            timer3.Stop();
+                        }
+                        Exe_logger.Info("[3] (2) targetCount = " + targetCount);
+                        prevCount = targetCount;
+                        Exe_logger.Info("[3] (2) prevCount = " + prevCount);
+                    }
+                }
+                else
+                {
+                    count++;
+                }
+            };
+            timer3.Start();
         }
 
         /// <summary>
@@ -384,6 +739,8 @@ namespace PacenotesTaskTray
 
             readSetting();
             this.setTimer();
+            this.setTimer2();
+            this.setTimer3();
         }
 
         /// <summary>

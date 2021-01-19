@@ -232,6 +232,7 @@
             this.buttonDialog2.TabIndex = 7;
             this.buttonDialog2.Text = "...";
             this.buttonDialog2.UseVisualStyleBackColor = true;
+            this.buttonDialog2.Click += new System.EventHandler(this.buttonDialog2_Click);
             // 
             // textTarget2
             // 
@@ -257,6 +258,7 @@
             this.buttonDialog3.TabIndex = 9;
             this.buttonDialog3.Text = "...";
             this.buttonDialog3.UseVisualStyleBackColor = true;
+            this.buttonDialog3.Click += new System.EventHandler(this.buttonDialog3_Click);
             // 
             // textTarget3
             // 
