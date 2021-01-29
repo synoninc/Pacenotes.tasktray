@@ -112,6 +112,11 @@ namespace PacenotesTaskTray
         private string target = "";
         private string target2 = "";
         private string target3 = "";
+
+        private string last = "";
+        private string last2 = "";
+        private string last3 = "";
+
         private string login = "";
         private string username = "";
         private string password = "";
@@ -260,109 +265,127 @@ namespace PacenotesTaskTray
                             Exe_logger.Info("[1] target folder = " + subFolders[subFolders.Length - 1]);
                             Console.WriteLine("[1] target folder = " + subFolders[subFolders.Length-1]);
 
-                            // タイマーの起動
-                            System.Timers.Timer timerSub = new System.Timers.Timer(1000);
+                            string tmp = subFolders[subFolders.Length - 1].ToString();
+                            Console.WriteLine("[1] tmp = " + tmp);
+                            Console.WriteLine("[1] last = " + this.last);
+                            Exe_logger.Info("[1] tmp = " + tmp);
+                            Exe_logger.Info("[1] last = " + this.last);
 
-                            int countSub = 0;
-                            int prevCountSub = -1;
-                            int targetCountSub = 0;
-                            timerSub.Elapsed += (senderSub, eSub) =>
+                            if (this.last != tmp)
                             {
-                                // インターバルで実行
-                                if (countSub >= interval)
+                                // タイマーの起動
+                                System.Timers.Timer timerSub = new System.Timers.Timer(1000);
+
+                                int countSub = 0;
+                                int prevCountSub = -1;
+                                int targetCountSub = 0;
+                                timerSub.Elapsed += (senderSub, eSub) =>
                                 {
-                                    countSub = 0;
-
-                                    try
+                                    // インターバルで実行
+                                    if (countSub >= interval)
                                     {
-                                        // pdfファイルの取得
-                                        string[] files = Directory.GetFiles(target + "\\" + subFolders[subFolders.Length - 1], "*.pdf");
+                                        countSub = 0;
 
-                                        Exe_logger.Info("[1] execute sub timer (" + files.Length.ToString() + ")");
-
-                                        // ファイル数の変化なしの確認
-                                        targetCountSub = files.Length;
-                                        Console.WriteLine("[1] targetCountSub = " + targetCountSub);
-                                        Console.WriteLine("[1] prevCountSub = " + prevCountSub);
-                                        Exe_logger.Info("[1] targetCountSub = " + targetCountSub);
-                                        Exe_logger.Info("[1] prevCountSub = " + prevCountSub);
-                                        if (prevCountSub != -1 && targetCountSub != 0 && prevCountSub == targetCountSub)
+                                        try
                                         {
-                                            // APIのログイン処理
-                                            Hashtable ht = new Hashtable();
-                                            ht["username"] = this.username;
-                                            ht["password"] = this.password;
-                                            String result = requestServer(this.login, ht);
-                                            JObject jResult = JObject.Parse(result);
-                                            Console.WriteLine(jResult["result"]);
-                                            if (jResult["result"].ToString() == "True")
+                                            // pdfファイルの取得
+                                            string[] files = Directory.GetFiles(target + "\\" + subFolders[subFolders.Length - 1], "*.pdf");
+
+                                            Exe_logger.Info("[1] execute sub timer (" + files.Length.ToString() + ")");
+
+                                            // ファイル数の変化なしの確認
+                                            targetCountSub = files.Length;
+                                            Console.WriteLine("[1] targetCountSub = " + targetCountSub);
+                                            Console.WriteLine("[1] prevCountSub = " + prevCountSub);
+                                            Exe_logger.Info("[1] targetCountSub = " + targetCountSub);
+                                            Exe_logger.Info("[1] prevCountSub = " + prevCountSub);
+
+                                            if (prevCountSub != -1 && targetCountSub != 0 && prevCountSub == targetCountSub)
                                             {
-                                                Exe_logger.Info("[1] login completed");
-                                                Console.WriteLine("[1] login completed");
-
-                                                // APIのコマンド実行処理
-                                                String argument = this.args;
-                                                Hashtable htExe = new Hashtable();
-                                                htExe["command"] = this.command;
-                                                htExe["args"] = argument.Replace("%target%", "1").Replace("%count%", files.Length.ToString());
-                                                String resultExe = requestServer(this.notification, htExe);
-                                                JObject jResultExe = JObject.Parse(resultExe);
-                                                if (jResultExe["result"].ToString() == "True")
+                                                // APIのログイン処理
+                                                Hashtable ht = new Hashtable();
+                                                ht["username"] = this.username;
+                                                ht["password"] = this.password;
+                                                String result = requestServer(this.login, ht);
+                                                JObject jResult = JObject.Parse(result);
+                                                Console.WriteLine(jResult["result"]);
+                                                if (jResult["result"].ToString() == "True")
                                                 {
-                                                    string param = "";
-                                                    foreach (string k in files)
-                                                    {
-                                                        param += String.Format("{0},", k);
-                                                    }
+                                                    Exe_logger.Info("[1] login completed");
+                                                    Console.WriteLine("[1] login completed");
 
-                                                    Exe_logger.Info("[1] execute completed (" + files.Length.ToString() + ") : " + param);
-                                                    Console.WriteLine("[1] execute completed (" + files.Length.ToString() + ") : " + param);
+                                                    // APIのコマンド実行処理
+                                                    String argument = this.args;
+                                                    Hashtable htExe = new Hashtable();
+                                                    htExe["command"] = this.command;
+                                                    htExe["args"] = argument.Replace("%target%", "1").Replace("%count%", files.Length.ToString());
+                                                    String resultExe = requestServer(this.notification, htExe);
+                                                    JObject jResultExe = JObject.Parse(resultExe);
+                                                    if (jResultExe["result"].ToString() == "True")
+                                                    {
+                                                        string param = "";
+                                                        foreach (string k in files)
+                                                        {
+                                                            param += String.Format("{0},", k);
+                                                        }
+
+                                                        Exe_logger.Info("[1] execute completed (" + files.Length.ToString() + ") : " + param);
+                                                        Console.WriteLine("[1] execute completed (" + files.Length.ToString() + ") : " + param);
+                                                    }
+                                                    else
+                                                    {
+                                                        Exe_logger.Error("[1] execute erro : " + resultExe);
+                                                    }
                                                 }
                                                 else
                                                 {
-                                                    Exe_logger.Error("[1] execute erro : " + resultExe);
+                                                    Exe_logger.Error("[1] login error : " + result);
                                                 }
+
+                                                timerSub.Stop();
+
+                                                Exe_logger.Info("[1] (3) targetCount = " + targetCount);
+                                                prevCount = targetCount;
+                                                Exe_logger.Info("[1] (3) prevCount = " + prevCount);
+                                                this.last = subFolders[subFolders.Length - 1].ToString();
+
+                                                timer.Start();
                                             }
-                                            else
+                                            if (prevCountSub != 0 && targetCountSub == 0)
                                             {
-                                                Exe_logger.Error("[1] login error : " + result);
+                                                Console.WriteLine("[1] break sub");
+                                                timerSub.Stop();
+
+                                                Exe_logger.Info("[1] (4) targetCount = " + targetCount);
+                                                prevCount = targetCount;
+                                                Exe_logger.Info("[1] (4) prevCount = " + prevCount);
+                                                this.last = "";
+
+                                                timer.Start();
                                             }
-
-                                            timerSub.Stop();
-
-                                            Exe_logger.Info("[1] (3) targetCount = " + targetCount);
-                                            prevCount = targetCount;
-                                            Exe_logger.Info("[1] (3) prevCount = " + prevCount);
-
-                                            timer.Start();
+                                            prevCountSub = targetCountSub;
                                         }
-                                        if (prevCountSub != 0 && targetCountSub == 0)
+                                        catch (Exception ex)
                                         {
-                                            Console.WriteLine("[1] break sub");
-                                            timerSub.Stop();
+                                            Exe_logger.Error("[1] exception error : " + ex);
 
-                                            Exe_logger.Info("[1] (4) targetCount = " + targetCount);
-                                            prevCount = targetCount;
-                                            Exe_logger.Info("[1] (4) prevCount = " + prevCount);
-
-                                            timer.Start();
+                                            subFolders = di.GetDirectories("*", System.IO.SearchOption.AllDirectories);
                                         }
-                                        prevCountSub = targetCountSub;
                                     }
-                                    catch (Exception ex)
+                                    else
                                     {
-                                        Exe_logger.Error("[1] exception error : " + ex);
-
-                                        subFolders = di.GetDirectories("*", System.IO.SearchOption.AllDirectories);
+                                        countSub++;
                                     }
-                                }
-                                else
-                                {
-                                    countSub++;
-                                }
-                            };
-                            timerSub.Start();
-                            timer.Stop();
+                                };
+                                timerSub.Start();
+                                timer.Stop();
+                            } else
+                            {
+                                Exe_logger.Info("[1] target folder cancel ");
+                                Console.WriteLine("[1] target folder cancel");
+
+                                prevCount = targetCount;
+                            }
                         }
                         Exe_logger.Info("[1] (2) targetCount = " + targetCount);
                         prevCount = targetCount;
@@ -421,109 +444,128 @@ namespace PacenotesTaskTray
                             Exe_logger.Info("[2] target folder = " + subFolders[subFolders.Length - 1]);
                             Console.WriteLine("[2] target folder = " + subFolders[subFolders.Length - 1]);
 
-                            // タイマーの起動
-                            System.Timers.Timer timerSub = new System.Timers.Timer(1000);
+                            string tmp = subFolders[subFolders.Length - 1].ToString();
+                            Console.WriteLine("[2] tmp = " + tmp);
+                            Console.WriteLine("[2] last2 = " + this.last2);
+                            Exe_logger.Info("[2] tmp = " + tmp);
+                            Exe_logger.Info("[2] last2 = " + this.last2);
 
-                            int countSub = 0;
-                            int prevCountSub = -1;
-                            int targetCountSub = 0;
-                            timerSub.Elapsed += (senderSub, eSub) =>
+                            if (this.last2 != tmp)
                             {
-                                // インターバルで実行
-                                if (countSub >= interval)
+                                // タイマーの起動
+                                System.Timers.Timer timerSub = new System.Timers.Timer(1000);
+
+                                int countSub = 0;
+                                int prevCountSub = -1;
+                                int targetCountSub = 0;
+                                timerSub.Elapsed += (senderSub, eSub) =>
                                 {
-                                    countSub = 0;
-
-                                    try
+                                    // インターバルで実行
+                                    if (countSub >= interval)
                                     {
-                                        // pdfファイルの取得
-                                        string[] files = Directory.GetFiles(target2 + "\\" + subFolders[subFolders.Length - 1], "*.pdf");
+                                        countSub = 0;
 
-                                        Exe_logger.Info("[2] execute sub timer (" + files.Length.ToString() + ")");
-
-                                        // ファイル数の変化なしの確認
-                                        targetCountSub = files.Length;
-                                        Console.WriteLine("[2] targetCountSub = " + targetCountSub);
-                                        Console.WriteLine("[2] prevCountSub = " + prevCountSub);
-                                        Exe_logger.Info("[2] targetCountSub = " + targetCountSub);
-                                        Exe_logger.Info("[2] prevCountSub = " + prevCountSub);
-                                        if (prevCountSub != -1 && targetCountSub != 0 && prevCountSub == targetCountSub)
+                                        try
                                         {
-                                            // APIのログイン処理
-                                            Hashtable ht = new Hashtable();
-                                            ht["username"] = this.username;
-                                            ht["password"] = this.password;
-                                            String result = requestServer(this.login, ht);
-                                            JObject jResult = JObject.Parse(result);
-                                            Console.WriteLine(jResult["result"]);
-                                            if (jResult["result"].ToString() == "True")
+                                            // pdfファイルの取得
+                                            string[] files = Directory.GetFiles(target2 + "\\" + subFolders[subFolders.Length - 1], "*.pdf");
+
+                                            Exe_logger.Info("[2] execute sub timer (" + files.Length.ToString() + ")");
+
+                                            // ファイル数の変化なしの確認
+                                            targetCountSub = files.Length;
+                                            Console.WriteLine("[2] targetCountSub = " + targetCountSub);
+                                            Console.WriteLine("[2] prevCountSub = " + prevCountSub);
+                                            Exe_logger.Info("[2] targetCountSub = " + targetCountSub);
+                                            Exe_logger.Info("[2] prevCountSub = " + prevCountSub);
+                                            if (prevCountSub != -1 && targetCountSub != 0 && prevCountSub == targetCountSub)
                                             {
-                                                Exe_logger.Info("[2] login completed");
-                                                Console.WriteLine("[2] login completed");
-
-                                                // APIのコマンド実行処理
-                                                String argument = this.args;
-                                                Hashtable htExe = new Hashtable();
-                                                htExe["command"] = this.command;
-                                                htExe["args"] = argument.Replace("%target%", "2").Replace("%count%", files.Length.ToString());
-                                                String resultExe = requestServer(this.notification, htExe);
-                                                JObject jResultExe = JObject.Parse(resultExe);
-                                                if (jResultExe["result"].ToString() == "True")
+                                                // APIのログイン処理
+                                                Hashtable ht = new Hashtable();
+                                                ht["username"] = this.username;
+                                                ht["password"] = this.password;
+                                                String result = requestServer(this.login, ht);
+                                                JObject jResult = JObject.Parse(result);
+                                                Console.WriteLine(jResult["result"]);
+                                                if (jResult["result"].ToString() == "True")
                                                 {
-                                                    string param = "";
-                                                    foreach (string k in files)
-                                                    {
-                                                        param += String.Format("{0},", k);
-                                                    }
+                                                    Exe_logger.Info("[2] login completed");
+                                                    Console.WriteLine("[2] login completed");
 
-                                                    Exe_logger.Info("[2] execute completed (" + files.Length.ToString() + ") : " + param);
-                                                    Console.WriteLine("[2] execute completed (" + files.Length.ToString() + ") : " + param);
+                                                    // APIのコマンド実行処理
+                                                    String argument = this.args;
+                                                    Hashtable htExe = new Hashtable();
+                                                    htExe["command"] = this.command;
+                                                    htExe["args"] = argument.Replace("%target%", "2").Replace("%count%", files.Length.ToString());
+                                                    String resultExe = requestServer(this.notification, htExe);
+                                                    JObject jResultExe = JObject.Parse(resultExe);
+                                                    if (jResultExe["result"].ToString() == "True")
+                                                    {
+                                                        string param = "";
+                                                        foreach (string k in files)
+                                                        {
+                                                            param += String.Format("{0},", k);
+                                                        }
+
+                                                        Exe_logger.Info("[2] execute completed (" + files.Length.ToString() + ") : " + param);
+                                                        Console.WriteLine("[2] execute completed (" + files.Length.ToString() + ") : " + param);
+                                                    }
+                                                    else
+                                                    {
+                                                        Exe_logger.Error("[2] execute erro : " + resultExe);
+                                                    }
                                                 }
                                                 else
                                                 {
-                                                    Exe_logger.Error("[2] execute erro : " + resultExe);
+                                                    Exe_logger.Error("[2] login error : " + result);
                                                 }
+
+                                                timerSub.Stop();
+
+                                                Exe_logger.Info("[2] (3) targetCount = " + targetCount);
+                                                prevCount = targetCount;
+                                                Exe_logger.Info("[2] (3) prevCount = " + prevCount);
+                                                this.last2 = subFolders[subFolders.Length - 1].ToString();
+
+                                                timer2.Start();
                                             }
-                                            else
+                                            if (prevCountSub != 0 && targetCountSub == 0)
                                             {
-                                                Exe_logger.Error("[2] login error : " + result);
+                                                Console.WriteLine("[2] break sub");
+                                                timerSub.Stop();
+
+                                                Exe_logger.Info("[2] (4) targetCount = " + targetCount);
+                                                prevCount = targetCount;
+                                                Exe_logger.Info("[2] (4) prevCount = " + prevCount);
+                                                this.last2 = "";
+
+                                                timer.Start();
                                             }
-
-                                            timerSub.Stop();
-
-                                            Exe_logger.Info("[2] (3) targetCount = " + targetCount);
-                                            prevCount = targetCount;
-                                            Exe_logger.Info("[2] (3) prevCount = " + prevCount);
-
-                                            timer2.Start();
+                                            prevCountSub = targetCountSub;
                                         }
-                                        if (prevCountSub != 0 && targetCountSub == 0)
+                                        catch (Exception ex)
                                         {
-                                            Console.WriteLine("[2] break sub");
-                                            timerSub.Stop();
+                                            Exe_logger.Error("[2] exception error : " + ex);
 
-                                            Exe_logger.Info("[2] (4) targetCount = " + targetCount);
-                                            prevCount = targetCount;
-                                            Exe_logger.Info("[2] (4) prevCount = " + prevCount);
-
-                                            timer.Start();
+                                            subFolders = di.GetDirectories("*", System.IO.SearchOption.AllDirectories);
                                         }
-                                        prevCountSub = targetCountSub;
                                     }
-                                    catch (Exception ex)
+                                    else
                                     {
-                                        Exe_logger.Error("[2] exception error : " + ex);
-
-                                        subFolders = di.GetDirectories("*", System.IO.SearchOption.AllDirectories);
+                                        countSub++;
                                     }
-                                }
-                                else
-                                {
-                                    countSub++;
-                                }
-                            };
-                            timerSub.Start();
-                            timer2.Stop();
+                                };
+                                timerSub.Start();
+                                timer2.Stop();
+                            }
+                            else
+                            {
+                                Exe_logger.Info("[2] target folder cancel ");
+                                Console.WriteLine("[2] target folder cancel");
+
+                                prevCount = targetCount;
+                            }
+
                         }
                         Exe_logger.Info("[2] (2) targetCount = " + targetCount);
                         prevCount = targetCount;
@@ -582,109 +624,128 @@ namespace PacenotesTaskTray
                             Exe_logger.Info("[3] target folder = " + subFolders[subFolders.Length - 1]);
                             Console.WriteLine("[3] target folder = " + subFolders[subFolders.Length - 1]);
 
-                            // タイマーの起動
-                            System.Timers.Timer timerSub = new System.Timers.Timer(1000);
+                            string tmp = subFolders[subFolders.Length - 1].ToString();
+                            Console.WriteLine("[3] tmp = " + tmp);
+                            Console.WriteLine("[3] last3 = " + this.last3);
+                            Exe_logger.Info("[3] tmp = " + tmp);
+                            Exe_logger.Info("[3] last3 = " + this.last3);
 
-                            int countSub = 0;
-                            int prevCountSub = -1;
-                            int targetCountSub = 0;
-                            timerSub.Elapsed += (senderSub, eSub) =>
+                            if (this.last3 != tmp)
                             {
-                                // インターバルで実行
-                                if (countSub >= interval)
+                                // タイマーの起動
+                                System.Timers.Timer timerSub = new System.Timers.Timer(1000);
+
+                                int countSub = 0;
+                                int prevCountSub = -1;
+                                int targetCountSub = 0;
+                                timerSub.Elapsed += (senderSub, eSub) =>
                                 {
-                                    countSub = 0;
-
-                                    try
+                                    // インターバルで実行
+                                    if (countSub >= interval)
                                     {
-                                        // pdfファイルの取得
-                                        string[] files = Directory.GetFiles(target3 + "\\" + subFolders[subFolders.Length - 1], "*.pdf");
+                                        countSub = 0;
 
-                                        Exe_logger.Info("[3] execute sub timer (" + files.Length.ToString() + ")");
-
-                                        // ファイル数の変化なしの確認
-                                        targetCountSub = files.Length;
-                                        Console.WriteLine("[3] targetCountSub = " + targetCountSub);
-                                        Console.WriteLine("[3] prevCountSub = " + prevCountSub);
-                                        Exe_logger.Info("[3] targetCountSub = " + targetCountSub);
-                                        Exe_logger.Info("[3] prevCountSub = " + prevCountSub);
-                                        if (prevCountSub != -1 && targetCountSub != 0 && prevCountSub == targetCountSub)
+                                        try
                                         {
-                                            // APIのログイン処理
-                                            Hashtable ht = new Hashtable();
-                                            ht["username"] = this.username;
-                                            ht["password"] = this.password;
-                                            String result = requestServer(this.login, ht);
-                                            JObject jResult = JObject.Parse(result);
-                                            Console.WriteLine(jResult["result"]);
-                                            if (jResult["result"].ToString() == "True")
+                                            // pdfファイルの取得
+                                            string[] files = Directory.GetFiles(target3 + "\\" + subFolders[subFolders.Length - 1], "*.pdf");
+
+                                            Exe_logger.Info("[3] execute sub timer (" + files.Length.ToString() + ")");
+
+                                            // ファイル数の変化なしの確認
+                                            targetCountSub = files.Length;
+                                            Console.WriteLine("[3] targetCountSub = " + targetCountSub);
+                                            Console.WriteLine("[3] prevCountSub = " + prevCountSub);
+                                            Exe_logger.Info("[3] targetCountSub = " + targetCountSub);
+                                            Exe_logger.Info("[3] prevCountSub = " + prevCountSub);
+                                            if (prevCountSub != -1 && targetCountSub != 0 && prevCountSub == targetCountSub)
                                             {
-                                                Exe_logger.Info("[3] login completed");
-                                                Console.WriteLine("[3] login completed");
-
-                                                // APIのコマンド実行処理
-                                                String argument = this.args;
-                                                Hashtable htExe = new Hashtable();
-                                                htExe["command"] = this.command;
-                                                htExe["args"] = argument.Replace("%target%", "3").Replace("%count%", files.Length.ToString());
-                                                String resultExe = requestServer(this.notification, htExe);
-                                                JObject jResultExe = JObject.Parse(resultExe);
-                                                if (jResultExe["result"].ToString() == "True")
+                                                // APIのログイン処理
+                                                Hashtable ht = new Hashtable();
+                                                ht["username"] = this.username;
+                                                ht["password"] = this.password;
+                                                String result = requestServer(this.login, ht);
+                                                JObject jResult = JObject.Parse(result);
+                                                Console.WriteLine(jResult["result"]);
+                                                if (jResult["result"].ToString() == "True")
                                                 {
-                                                    string param = "";
-                                                    foreach (string k in files)
-                                                    {
-                                                        param += String.Format("{0},", k);
-                                                    }
+                                                    Exe_logger.Info("[3] login completed");
+                                                    Console.WriteLine("[3] login completed");
 
-                                                    Exe_logger.Info("[3] execute completed (" + files.Length.ToString() + ") : " + param);
-                                                    Console.WriteLine("[3] execute completed (" + files.Length.ToString() + ") : " + param);
+                                                    // APIのコマンド実行処理
+                                                    String argument = this.args;
+                                                    Hashtable htExe = new Hashtable();
+                                                    htExe["command"] = this.command;
+                                                    htExe["args"] = argument.Replace("%target%", "3").Replace("%count%", files.Length.ToString());
+                                                    String resultExe = requestServer(this.notification, htExe);
+                                                    JObject jResultExe = JObject.Parse(resultExe);
+                                                    if (jResultExe["result"].ToString() == "True")
+                                                    {
+                                                        string param = "";
+                                                        foreach (string k in files)
+                                                        {
+                                                            param += String.Format("{0},", k);
+                                                        }
+
+                                                        Exe_logger.Info("[3] execute completed (" + files.Length.ToString() + ") : " + param);
+                                                        Console.WriteLine("[3] execute completed (" + files.Length.ToString() + ") : " + param);
+                                                    }
+                                                    else
+                                                    {
+                                                        Exe_logger.Error("[3] execute erro : " + resultExe);
+                                                    }
                                                 }
                                                 else
                                                 {
-                                                    Exe_logger.Error("[3] execute erro : " + resultExe);
+                                                    Exe_logger.Error("[3] login error : " + result);
                                                 }
+
+                                                timerSub.Stop();
+
+                                                Exe_logger.Info("[3] (3) targetCount = " + targetCount);
+                                                prevCount = targetCount;
+                                                Exe_logger.Info("[3] (3) prevCount = " + prevCount);
+                                                this.last3 = subFolders[subFolders.Length - 1].ToString();
+
+                                                timer3.Start();
                                             }
-                                            else
+                                            if (prevCountSub != 0 && targetCountSub == 0)
                                             {
-                                                Exe_logger.Error("[3] login error : " + result);
+                                                Console.WriteLine("[3] break sub");
+                                                timerSub.Stop();
+
+                                                Exe_logger.Info("[3] (4) targetCount = " + targetCount);
+                                                prevCount = targetCount;
+                                                Exe_logger.Info("[3] (4) prevCount = " + prevCount);
+                                                this.last3 = "";
+
+                                                timer3.Start();
                                             }
-
-                                            timerSub.Stop();
-
-                                            Exe_logger.Info("[3] (3) targetCount = " + targetCount);
-                                            prevCount = targetCount;
-                                            Exe_logger.Info("[3] (3) prevCount = " + prevCount);
-
-                                            timer3.Start();
+                                            prevCountSub = targetCountSub;
                                         }
-                                        if (prevCountSub != 0 && targetCountSub == 0)
+                                        catch (Exception ex)
                                         {
-                                            Console.WriteLine("[3] break sub");
-                                            timerSub.Stop();
+                                            Exe_logger.Error("[3] exception error : " + ex);
 
-                                            Exe_logger.Info("[3] (4) targetCount = " + targetCount);
-                                            prevCount = targetCount;
-                                            Exe_logger.Info("[3] (4) prevCount = " + prevCount);
-
-                                            timer3.Start();
+                                            subFolders = di.GetDirectories("*", System.IO.SearchOption.AllDirectories);
                                         }
-                                        prevCountSub = targetCountSub;
                                     }
-                                    catch (Exception ex)
+                                    else
                                     {
-                                        Exe_logger.Error("[3] exception error : " + ex);
-
-                                        subFolders = di.GetDirectories("*", System.IO.SearchOption.AllDirectories);
+                                        countSub++;
                                     }
-                                }
-                                else
-                                {
-                                    countSub++;
-                                }
-                            };
-                            timerSub.Start();
-                            timer3.Stop();
+                                };
+                                timerSub.Start();
+                                timer3.Stop();
+                            }
+                            else
+                            {
+                                Exe_logger.Info("[3] target folder cancel ");
+                                Console.WriteLine("[3] target folder cancel");
+
+                                prevCount = targetCount;
+                            }
+
                         }
                         Exe_logger.Info("[3] (2) targetCount = " + targetCount);
                         prevCount = targetCount;
