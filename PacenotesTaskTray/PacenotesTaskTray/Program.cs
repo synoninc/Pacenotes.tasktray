@@ -87,7 +87,11 @@ namespace PacenotesTaskTray
             file.ArchiveEvery = FileArchivePeriod.None;
             file.MaxArchiveFiles = 7;
             conf.AddTarget(file);
-            conf.LoggingRules.Add(new LoggingRule("*", LogLevel.Debug, file));
+#if DEBUG
+            conf.LoggingRules.Add(new LoggingRule("*", LogLevel.Info, file));
+#else
+            conf.LoggingRules.Add(new LoggingRule("*", LogLevel.Info, file));
+#endif
 
             var eventlog = new EventLogTarget("eventlog");
             eventlog.Layout = "${message}${newline}${exception:format=ToString}";
@@ -95,7 +99,11 @@ namespace PacenotesTaskTray
             eventlog.Log = "Application";
             eventlog.EventId = "1001";
             conf.AddTarget(eventlog);
-            conf.LoggingRules.Add(new LoggingRule("*", LogLevel.Error, eventlog));
+#if DEBUG
+            conf.LoggingRules.Add(new LoggingRule("*", LogLevel.Info, eventlog));
+#else
+            conf.LoggingRules.Add(new LoggingRule("*", LogLevel.Info, eventlog));
+#endif
 
             LogManager.Configuration = conf;
         }
@@ -117,6 +125,10 @@ namespace PacenotesTaskTray
         private string last2 = "";
         private string last3 = "";
 
+        private int lastTargetCount = 0;
+        private int lastTargetCount2 = 0;
+        private int lastTargetCount3 = 0;
+
         private string login = "";
         private string username = "";
         private string password = "";
@@ -135,6 +147,7 @@ namespace PacenotesTaskTray
         /// </summary>
         public ResidentMenu()
         {
+
             this.ShowInTaskbar = false;
             this.setMenu();
 
@@ -146,6 +159,9 @@ namespace PacenotesTaskTray
             this.setTimer();
             this.setTimer2();
             this.setTimer3();
+
+            Exe_logger.Warn("Execute Pacenotes.tasktary version 1.0 (C) Synon,Inc.");
+
         }
 
         /// <summary>
@@ -245,6 +261,420 @@ namespace PacenotesTaskTray
                     Exe_logger.Info("[1] execute timer");
                     if (target != "")
                     {
+                        try
+                        {
+                            // pdfファイルの取得
+                            string[] files = Directory.GetFiles(target, "*.csv");
+
+                            Exe_logger.Info("[1] execute timer (" + files.Length.ToString() + ")");
+
+                            // ファイル数の変化なしの確認
+                            targetCount = files.Length;
+#if DEBUG
+                            Console.WriteLine("[1] lastTargetCount = " + lastTargetCount);
+                            Console.WriteLine("[1] targetCount = " + targetCount);
+                            Console.WriteLine("[1] prevCount = " + prevCount);
+#endif
+
+                            Exe_logger.Info("[1] lastTargetCount = " + lastTargetCount);
+                            Exe_logger.Info("[1] targetCount = " + targetCount);
+                            Exe_logger.Info("[1] prevCount = " + prevCount);
+
+                            if (prevCount != -1 && targetCount != 0 && prevCount == targetCount && targetCount != lastTargetCount)
+                            {
+#if DEBUG
+#else
+                                Exe_logger.Warn("[1] lastTargetCount = " + lastTargetCount);
+                                Exe_logger.Warn("[1] targetCount = " + targetCount);
+                                Exe_logger.Warn("[1] prevCount = " + prevCount);
+#endif
+
+                                timer.Stop();
+
+                                // APIのログイン処理
+                                Hashtable ht = new Hashtable();
+                                ht["username"] = this.username;
+                                ht["password"] = this.password;
+                                String result = requestServer(this.login, ht);
+                                JObject jResult = JObject.Parse(result);
+#if DEBUG
+                                Console.WriteLine(jResult["result"]);
+#endif
+                                if (jResult["result"].ToString() == "True")
+                                {
+                                    Exe_logger.Info("[1] login completed");
+#if DEBUG
+                                    Console.WriteLine("[1] login completed");
+#endif
+
+                                    // APIのコマンド実行処理
+                                    String argument = this.args;
+                                    Hashtable htExe = new Hashtable();
+                                    htExe["command"] = this.command;
+                                    htExe["args"] = argument.Replace("%target%", "1").Replace("%count%", files.Length.ToString());
+                                    String resultExe = requestServer(this.notification, htExe);
+                                    JObject jResultExe = JObject.Parse(resultExe);
+                                    if (jResultExe["result"].ToString() == "True")
+                                    {
+                                        string param = "";
+                                        foreach (string k in files)
+                                        {
+                                            param += String.Format("{0},", k);
+                                        }
+
+                                        Exe_logger.Warn("[1] execute completed (" + files.Length.ToString() + ") : " + param);
+#if DEBUG
+                                        Console.WriteLine("[1] execute completed (" + files.Length.ToString() + ") : " + param);
+#endif
+
+                                        lastTargetCount = targetCount;
+                                        Exe_logger.Warn("[1] lastTargetCount = " + lastTargetCount);
+
+                                    }
+                                    else
+                                    {
+                                        Exe_logger.Error("[1] execute erro : " + resultExe);
+                                    }
+                                }
+                                else
+                                {
+                                    Exe_logger.Error("[1] login error : " + result);
+                                }
+
+                                Exe_logger.Info("[1] (3) targetCount = " + targetCount);
+                                prevCount = targetCount;
+                                Exe_logger.Info("[1] (3) prevCount = " + prevCount);
+
+                                timer.Start();
+                            }
+                            if (prevCount != 0 && targetCount == 0)
+                            {
+#if DEBUG
+                                Console.WriteLine("[1] break sub");
+#endif
+
+                                Exe_logger.Info("[1] (4) targetCount = " + targetCount);
+                                prevCount = targetCount;
+                                Exe_logger.Info("[1] (4) prevCount = " + prevCount);
+                                lastTargetCount = targetCount;
+                                Exe_logger.Info("[1] (4) lastTargetCount = " + lastTargetCount);
+
+                            }
+                            prevCount = targetCount;
+                        }
+                        catch (Exception ex)
+                        {
+                            Exe_logger.Error("[1] exception error : " + ex);
+
+                            timer.Start();
+                        }
+                    }
+                }
+                else
+                {
+                    count++;
+                }
+            };
+            timer.Start();
+        }
+
+        private void setTimer2()
+        {
+            int count = 0;
+            int prevCount = -1;
+            int targetCount = 0;
+            if (timer2.Enabled)
+            {
+                timer2.Stop();
+            }
+            timer2.Elapsed += (sender, e) =>
+            {
+                Exe_logger.Info("[2] (0) prevCount = " + prevCount);
+
+                // インターバルで実行
+                if (count >= interval)
+                {
+                    count = 0;
+
+                    Exe_logger.Info("[2] execute timer");
+                    if (target2 != "")
+                    {
+                        try
+                        {
+                            // pdfファイルの取得
+                            string[] files = Directory.GetFiles(target2, "*.csv");
+
+                            Exe_logger.Info("[2] execute timer (" + files.Length.ToString() + ")");
+
+                            // ファイル数の変化なしの確認
+                            targetCount = files.Length;
+#if DEBUG
+                            Console.WriteLine("[2] lastTargetCount2 = " + lastTargetCount2);
+                            Console.WriteLine("[2] targetCount = " + targetCount);
+                            Console.WriteLine("[2] prevCount = " + prevCount);
+#endif
+                            Exe_logger.Info("[2] lastTargetCount2 = " + lastTargetCount2);
+                            Exe_logger.Info("[2] targetCount = " + targetCount);
+                            Exe_logger.Info("[2] prevCount = " + prevCount);
+
+                            if (prevCount != -1 && targetCount != 0 && prevCount == targetCount && targetCount != lastTargetCount2)
+                            {
+#if DEBUG
+#else
+                                Exe_logger.Warn("[2] lastTargetCount2 = " + lastTargetCount2);
+                                Exe_logger.Warn("[2] targetCount = " + targetCount);
+                                Exe_logger.Warn("[2] prevCount = " + prevCount);
+#endif
+                                timer2.Stop();
+
+                                // APIのログイン処理
+                                Hashtable ht = new Hashtable();
+                                ht["username"] = this.username;
+                                ht["password"] = this.password;
+                                String result = requestServer(this.login, ht);
+                                JObject jResult = JObject.Parse(result);
+#if DEBUG
+                                Console.WriteLine(jResult["result"]);
+#endif
+                                if (jResult["result"].ToString() == "True")
+                                {
+                                    Exe_logger.Info("[2] login completed");
+#if DEBUG
+                                    Console.WriteLine("[2] login completed");
+#endif
+
+                                    // APIのコマンド実行処理
+                                    String argument = this.args;
+                                    Hashtable htExe = new Hashtable();
+                                    htExe["command"] = this.command;
+                                    htExe["args"] = argument.Replace("%target%", "2").Replace("%count%", files.Length.ToString());
+                                    String resultExe = requestServer(this.notification, htExe);
+                                    JObject jResultExe = JObject.Parse(resultExe);
+                                    if (jResultExe["result"].ToString() == "True")
+                                    {
+                                        string param = "";
+                                        foreach (string k in files)
+                                        {
+                                            param += String.Format("{0},", k);
+                                        }
+
+                                        Exe_logger.Warn("[2] execute completed (" + files.Length.ToString() + ") : " + param);
+#if DEBUG
+                                        Console.WriteLine("[2] execute completed (" + files.Length.ToString() + ") : " + param);
+#endif
+
+                                        lastTargetCount2 = targetCount;
+                                        Exe_logger.Warn("[2] lastTargetCount2 = " + lastTargetCount2);
+
+                                    }
+                                    else
+                                    {
+                                        Exe_logger.Error("[2] execute erro : " + resultExe);
+                                    }
+                                }
+                                else
+                                {
+                                    Exe_logger.Error("[2] login error : " + result);
+                                }
+
+                                Exe_logger.Info("[2] (3) targetCount = " + targetCount);
+                                prevCount = targetCount;
+                                Exe_logger.Info("[2] (3) prevCount = " + prevCount);
+
+                                timer2.Start();
+                            }
+                            if (prevCount != 0 && targetCount == 0)
+                            {
+#if DEBUG
+                                Console.WriteLine("[2] break sub");
+#endif
+
+                                Exe_logger.Info("[2] (4) targetCount = " + targetCount);
+                                prevCount = targetCount;
+                                Exe_logger.Info("[2] (4) prevCount = " + prevCount);
+                                lastTargetCount2 = targetCount;
+                                Exe_logger.Info("[2] (3) lastTargetCount2 = " + lastTargetCount2);
+
+                            }
+                            prevCount = targetCount;
+                        }
+                        catch (Exception ex)
+                        {
+                            Exe_logger.Error("[2] exception error : " + ex);
+
+                            timer2.Start();
+                        }
+                    }
+                }
+                else
+                {
+                    count++;
+                }
+            };
+            timer2.Start();
+        }
+
+        private void setTimer3()
+        {
+            int count = 0;
+            int prevCount = -1;
+            int targetCount = 0;
+            if (timer3.Enabled)
+            {
+                timer3.Stop();
+            }
+            timer3.Elapsed += (sender, e) =>
+            {
+                Exe_logger.Info("[3] (0) prevCount = " + prevCount);
+
+                // インターバルで実行
+                if (count >= interval)
+                {
+                    count = 0;
+
+                    Exe_logger.Info("[3] execute timer");
+                    if (target3 != "")
+                    {
+                        try
+                        {
+                            // pdfファイルの取得
+                            string[] files = Directory.GetFiles(target3, "*.csv");
+
+                            Exe_logger.Info("[3] execute timer (" + files.Length.ToString() + ")");
+
+                            // ファイル数の変化なしの確認
+                            targetCount = files.Length;
+#if DEBUG
+                            Console.WriteLine("[3] lastTargetCount3 = " + lastTargetCount3);
+                            Console.WriteLine("[3] targetCount = " + targetCount);
+                            Console.WriteLine("[3] prevCount = " + prevCount);
+#endif
+                            Exe_logger.Info("[3] lastTargetCount3 = " + lastTargetCount3);
+                            Exe_logger.Info("[3] targetCount = " + targetCount);
+                            Exe_logger.Info("[3] prevCount = " + prevCount);
+
+                            if (prevCount != -1 && targetCount != 0 && prevCount == targetCount && targetCount != lastTargetCount3)
+                            {
+#if DEBUG
+#else
+                                Exe_logger.Warn("[3] lastTargetCount3 = " + lastTargetCount3);
+                                Exe_logger.Warn("[3] targetCount = " + targetCount);
+                                Exe_logger.Warn("[3] prevCount = " + prevCount);
+#endif
+
+                                timer3.Stop();
+
+                                // APIのログイン処理
+                                Hashtable ht = new Hashtable();
+                                ht["username"] = this.username;
+                                ht["password"] = this.password;
+                                String result = requestServer(this.login, ht);
+                                JObject jResult = JObject.Parse(result);
+#if DEBUG
+                                Console.WriteLine(jResult["result"]);
+#endif
+                                if (jResult["result"].ToString() == "True")
+                                {
+                                    Exe_logger.Info("[3] login completed");
+#if DEBUG
+                                    Console.WriteLine("[3] login completed");
+#endif
+
+                                    // APIのコマンド実行処理
+                                    String argument = this.args;
+                                    Hashtable htExe = new Hashtable();
+                                    htExe["command"] = this.command;
+                                    htExe["args"] = argument.Replace("%target%", "3").Replace("%count%", files.Length.ToString());
+                                    String resultExe = requestServer(this.notification, htExe);
+                                    JObject jResultExe = JObject.Parse(resultExe);
+                                    if (jResultExe["result"].ToString() == "True")
+                                    {
+                                        string param = "";
+                                        foreach (string k in files)
+                                        {
+                                            param += String.Format("{0},", k);
+                                        }
+
+                                        Exe_logger.Warn("[3] execute completed (" + files.Length.ToString() + ") : " + param);
+#if DEBUG
+                                        Console.WriteLine("[3] execute completed (" + files.Length.ToString() + ") : " + param);
+#endif
+
+                                        lastTargetCount3 = targetCount;
+                                        Exe_logger.Warn("[3] lastTargetCount3 = " + lastTargetCount3);
+
+                                    }
+                                    else
+                                    {
+                                        Exe_logger.Error("[3] execute erro : " + resultExe);
+                                    }
+                                }
+                                else
+                                {
+                                    Exe_logger.Error("[3] login error : " + result);
+                                }
+
+                                Exe_logger.Info("[3] (3) targetCount = " + targetCount);
+                                prevCount = targetCount;
+                                Exe_logger.Info("[3] (3) prevCount = " + prevCount);
+
+                                timer3.Start();
+                            }
+                            if (prevCount != 0 && targetCount == 0)
+                            {
+#if DEBUG
+                                Console.WriteLine("[3] break sub");
+#endif
+
+                                Exe_logger.Info("[3] (4) targetCount = " + targetCount);
+                                prevCount = targetCount;
+                                Exe_logger.Info("[3] (4) prevCount = " + prevCount);
+                                lastTargetCount3 = targetCount;
+                                Exe_logger.Info("[3] (3) lastTargetCount3 = " + lastTargetCount3);
+
+                            }
+                            prevCount = targetCount;
+                        }
+                        catch (Exception ex)
+                        {
+                            Exe_logger.Error("[3] exception error : " + ex);
+
+                            timer3.Start();
+                        }
+                    }
+                }
+                else
+                {
+                    count++;
+                }
+            };
+            timer3.Start();
+        }
+        
+        /// <summary>
+        /// 監視タイマー処理
+        /// </summary>
+        private void setTimerOld()
+        {
+            int count = 0;
+            int prevCount = -1;
+            int targetCount = 0;
+            if (timer.Enabled)
+            {
+                timer.Stop();
+            }
+            timer.Elapsed += (sender, e) =>
+            {
+                Exe_logger.Info("[1] (0) prevCount = " + prevCount);
+
+                // インターバルで実行
+                if (count >= interval)
+                {
+                    count = 0;
+
+                    Exe_logger.Info("[1] execute timer");
+                    if (target != "")
+                    {
                         // ターゲットフォルダーのフォルダー一覧の取得
                         System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(target);
                         System.IO.DirectoryInfo[] subFolders =
@@ -263,7 +693,7 @@ namespace PacenotesTaskTray
                             Exe_logger.Info("[1] (1) prevCount = " + prevCount);
 
                             Exe_logger.Info("[1] target folder = " + subFolders[subFolders.Length - 1]);
-                            Console.WriteLine("[1] target folder = " + subFolders[subFolders.Length-1]);
+                            Console.WriteLine("[1] target folder = " + subFolders[subFolders.Length - 1]);
 
                             string tmp = subFolders[subFolders.Length - 1].ToString();
                             Console.WriteLine("[1] tmp = " + tmp);
@@ -379,7 +809,8 @@ namespace PacenotesTaskTray
                                 };
                                 timerSub.Start();
                                 timer.Stop();
-                            } else
+                            }
+                            else
                             {
                                 Exe_logger.Info("[1] target folder cancel ");
                                 Console.WriteLine("[1] target folder cancel");
@@ -403,7 +834,7 @@ namespace PacenotesTaskTray
         /// <summary>
         /// 監視タイマー処理
         /// </summary>
-        private void setTimer2()
+        private void setTimer2Old()
         {
             int count = 0;
             int prevCount = -1;
@@ -583,7 +1014,7 @@ namespace PacenotesTaskTray
         /// <summary>
         /// 監視タイマー処理
         /// </summary>
-        private void setTimer3()
+        private void setTimer3Old()
         {
             int count = 0;
             int prevCount = -1;
@@ -796,7 +1227,7 @@ namespace PacenotesTaskTray
         private void Setting_Click(object sender, EventArgs e)
         {
             Form1 f = new Form1();
-            f.Show();
+            f.ShowDialog();
 
             readSetting();
             this.setTimer();
