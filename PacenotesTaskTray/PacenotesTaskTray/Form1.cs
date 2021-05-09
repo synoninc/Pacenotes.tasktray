@@ -40,6 +40,20 @@ namespace PacenotesTaskTray
                 setting.Command = "";
                 setting.Args = "";
 
+                setting.IntervalA = 60;
+                setting.TargetA = "";
+                setting.Target2A = "";
+                setting.Target3A = "";
+                setting.CacheA = "";
+                setting.Cache2A = "";
+                setting.Cache3A = "";
+                setting.OutputA = "";
+                setting.Output2A = "";
+                setting.Output3A = "";
+                setting.ExecA = "";
+                setting.Exec2A = "";
+                setting.Exec3A = "";
+
                 var jsonData = JsonConvert.SerializeObject(setting);
 
                 using (var sw = new StreamWriter(filePath, false, System.Text.Encoding.UTF8))
@@ -64,6 +78,20 @@ namespace PacenotesTaskTray
                 this.textNotification.Text = setting.NotificationUrl;
                 this.textCommand.Text = setting.Command;
                 this.textArgs.Text = setting.Args;
+
+                this.textIntervalA.Text = setting.IntervalA.ToString();
+                this.textTargetA.Text = setting.TargetA;
+                this.textTarget2A.Text = setting.Target2A;
+                this.textTarget3A.Text = setting.Target3A;
+                this.textCacheA.Text = setting.CacheA;
+                this.textCache2A.Text = setting.Cache2A;
+                this.textCache3A.Text = setting.Cache3A;
+                this.textOutputA.Text = setting.OutputA;
+                this.textOutput2A.Text = setting.Output2A;
+                this.textOutput3A.Text = setting.Output3A;
+                this.textExecuteA.Text = setting.ExecA;
+                this.textExecute2A.Text = setting.Exec2A;
+                this.textExecute3A.Text = setting.Exec3A;
             }
         }
 
@@ -86,7 +114,8 @@ namespace PacenotesTaskTray
 
             // 画面からファイルの書き出し
             int interval;
-            if (int.TryParse(this.textInterval.Text, out interval))
+            int intervalA;
+            if (int.TryParse(this.textInterval.Text, out interval) && int.TryParse(this.textIntervalA.Text, out intervalA))
             {
                 setting.Interval = interval;
                 setting.Target = this.textTarget.Text;
@@ -99,6 +128,20 @@ namespace PacenotesTaskTray
                 setting.Command = this.textCommand.Text;
                 setting.Args = this.textArgs.Text;
 
+                setting.IntervalA = intervalA;
+                setting.TargetA = this.textTargetA.Text;
+                setting.Target2A = this.textTarget2A.Text;
+                setting.Target3A = this.textTarget3A.Text;
+                setting.CacheA = this.textCacheA.Text;
+                setting.Cache2A = this.textCache2A.Text;
+                setting.Cache3A = this.textCache3A.Text;
+                setting.OutputA = this.textOutputA.Text;
+                setting.Output2A = this.textOutput2A.Text;
+                setting.Output3A = this.textOutput3A.Text;
+                setting.ExecA = this.textExecuteA.Text;
+                setting.Exec2A = this.textExecute2A.Text;
+                setting.Exec3A = this.textExecute3A.Text;
+
                 var jsonData = JsonConvert.SerializeObject(setting);
 
                 using (var sw = new StreamWriter(filePath, false, System.Text.Encoding.UTF8))
@@ -109,7 +152,7 @@ namespace PacenotesTaskTray
             }
             else
             {
-                MessageBox.Show("インターバルは数字を入力してください。",
+                MessageBox.Show("インターバル/インターバルAは数字を入力してください。",
                     "エラー",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
@@ -162,6 +205,141 @@ namespace PacenotesTaskTray
             if (fbd.ShowDialog(this) == DialogResult.OK)
             {
                 this.textTarget3.Text = fbd.SelectedPath;
+            }
+        }
+
+        private void buttonDialogA_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog fbd = new FolderBrowserDialog();
+
+            fbd.Description = "PDFを監視するフォルダを指定してください。";
+            fbd.RootFolder = Environment.SpecialFolder.Desktop;
+            fbd.SelectedPath = @"C:\\";
+            fbd.ShowNewFolderButton = false;
+
+            if (fbd.ShowDialog(this) == DialogResult.OK)
+            {
+                this.textTargetA.Text = fbd.SelectedPath;
+            }
+        }
+
+        private void buttonDialog2A_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog fbd = new FolderBrowserDialog();
+
+            fbd.Description = "PDFを監視するフォルダ2を指定してください。";
+            fbd.RootFolder = Environment.SpecialFolder.Desktop;
+            fbd.SelectedPath = @"C:\\";
+            fbd.ShowNewFolderButton = false;
+
+            if (fbd.ShowDialog(this) == DialogResult.OK)
+            {
+                this.textTarget2A.Text = fbd.SelectedPath;
+            }
+        }
+
+        private void buttonDialog3A_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog fbd = new FolderBrowserDialog();
+
+            fbd.Description = "PDFを監視するフォルダ3を指定してください。";
+            fbd.RootFolder = Environment.SpecialFolder.Desktop;
+            fbd.SelectedPath = @"C:\\";
+            fbd.ShowNewFolderButton = false;
+
+            if (fbd.ShowDialog(this) == DialogResult.OK)
+            {
+                this.textTarget3A.Text = fbd.SelectedPath;
+            }
+        }
+
+        private void buttonCacheA_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog fbd = new FolderBrowserDialog();
+
+            fbd.Description = "PDFをキャッシュするフォルダを指定してください。";
+            fbd.RootFolder = Environment.SpecialFolder.Desktop;
+            fbd.SelectedPath = @"C:\\";
+            fbd.ShowNewFolderButton = false;
+
+            if (fbd.ShowDialog(this) == DialogResult.OK)
+            {
+                this.textCacheA.Text = fbd.SelectedPath;
+            }
+        }
+
+        private void buttonCache2A_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog fbd = new FolderBrowserDialog();
+
+            fbd.Description = "PDFをキャッシュするフォルダ2を指定してください。";
+            fbd.RootFolder = Environment.SpecialFolder.Desktop;
+            fbd.SelectedPath = @"C:\\";
+            fbd.ShowNewFolderButton = false;
+
+            if (fbd.ShowDialog(this) == DialogResult.OK)
+            {
+                this.textCache2A.Text = fbd.SelectedPath;
+            }
+        }
+
+        private void buttonCache3A_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog fbd = new FolderBrowserDialog();
+
+            fbd.Description = "PDFをキャッシュするフォルダ3を指定してください。";
+            fbd.RootFolder = Environment.SpecialFolder.Desktop;
+            fbd.SelectedPath = @"C:\\";
+            fbd.ShowNewFolderButton = false;
+
+            if (fbd.ShowDialog(this) == DialogResult.OK)
+            {
+                this.textCache3A.Text = fbd.SelectedPath;
+            }
+        }
+
+        private void buttonOutputA_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog fbd = new FolderBrowserDialog();
+
+            fbd.Description = "変換後のPDFを保存するフォルダを指定してください。";
+            fbd.RootFolder = Environment.SpecialFolder.Desktop;
+            fbd.SelectedPath = @"C:\\";
+            fbd.ShowNewFolderButton = false;
+
+            if (fbd.ShowDialog(this) == DialogResult.OK)
+            {
+                this.textOutputA.Text = fbd.SelectedPath;
+            }
+        }
+
+        private void buttonOutput2A_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog fbd = new FolderBrowserDialog();
+
+            fbd.Description = "変換後のPDFを保存するフォルダ2を指定してください。";
+            fbd.RootFolder = Environment.SpecialFolder.Desktop;
+            fbd.SelectedPath = @"C:\\";
+            fbd.ShowNewFolderButton = false;
+
+            if (fbd.ShowDialog(this) == DialogResult.OK)
+            {
+                this.textOutput2A.Text = fbd.SelectedPath;
+            }
+        }
+
+        private void buttonOutput3A_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog fbd = new FolderBrowserDialog();
+
+            fbd.Description = "変換後のPDFを保存するフォルダ3を指定してください。";
+            fbd.RootFolder = Environment.SpecialFolder.Desktop;
+            fbd.SelectedPath = @"C:\\";
+            fbd.ShowNewFolderButton = false;
+
+            if (fbd.ShowDialog(this) == DialogResult.OK)
+            {
+                this.textOutput3A.Text = fbd.SelectedPath;
             }
         }
     }

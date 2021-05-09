@@ -140,6 +140,33 @@ namespace PacenotesTaskTray
         private System.Timers.Timer timer2;
         private System.Timers.Timer timer3;
 
+        private int intervalA = 60;
+        private string targetA = "";
+        private string target2A = "";
+        private string target3A = "";
+        private string cacheA = "";
+        private string cache2A = "";
+        private string cache3A = "";
+        private string outputA = "";
+        private string output2A = "";
+        private string output3A = "";
+
+        private string execA = "";
+        private string exec2A = "";
+        private string exec3A = "";
+
+        private string lastA = "";
+        private string last2A = "";
+        private string last3A = "";
+
+        private int lastTargetCountA = 0;
+        private int lastTargetCount2A = 0;
+        private int lastTargetCount3A = 0;
+
+        private System.Timers.Timer timerA;
+        private System.Timers.Timer timer2A;
+        private System.Timers.Timer timer3A;
+
         private Logger Exe_logger = LogManager.GetCurrentClassLogger();
 
         /// <summary>
@@ -155,10 +182,18 @@ namespace PacenotesTaskTray
             this.timer2 = new System.Timers.Timer(1000);
             this.timer3 = new System.Timers.Timer(1000);
 
+            this.timerA = new System.Timers.Timer(1000);
+            this.timer2A = new System.Timers.Timer(1000);
+            this.timer3A = new System.Timers.Timer(1000);
+
             this.readSetting();
             this.setTimer();
             this.setTimer2();
             this.setTimer3();
+
+            this.setTimerA();
+            this.setTimer2A();
+            this.setTimer3A();
 
             Exe_logger.Warn("Execute Pacenotes.tasktary version 1.0 (C) Synon,Inc.");
 
@@ -650,6 +685,372 @@ namespace PacenotesTaskTray
             };
             timer3.Start();
         }
+
+        /// <summary>
+        /// 実行処理
+        /// </summary>
+        private String executeCommand(String command, String command2, String command3)
+        {
+            try
+            {
+                //Processオブジェクトを作成
+                System.Diagnostics.Process p = new System.Diagnostics.Process();
+
+                //入力できるようにする
+                p.StartInfo.UseShellExecute = false;
+                p.StartInfo.RedirectStandardInput = true;
+
+                //非同期で出力を読み取れるようにする
+                p.StartInfo.RedirectStandardOutput = true;
+                p.OutputDataReceived += p_OutputDataReceived;
+
+                p.StartInfo.FileName =
+                    System.Environment.GetEnvironmentVariable("ComSpec");
+                p.StartInfo.CreateNoWindow = true;
+
+                //起動
+                p.Start();
+
+                //非同期で出力の読み取りを開始
+                p.BeginOutputReadLine();
+
+                //入力のストリームを取得
+                System.IO.StreamWriter sw = p.StandardInput;
+                if (sw.BaseStream.CanWrite)
+                {
+                    sw.WriteLine(command);
+                    sw.WriteLine(command2);
+                    sw.WriteLine(command3);
+                    //終了する
+                    sw.WriteLine("exit");
+                }
+                sw.Close();
+
+                p.WaitForExit();
+                p.Close();
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
+
+        //OutputDataReceivedイベントハンドラ
+        //行が出力されるたびに呼び出される
+        static void p_OutputDataReceived(object sender,
+            System.Diagnostics.DataReceivedEventArgs e)
+        {
+            //出力された文字列を表示する
+            Console.WriteLine(e.Data);
+        }
+
+
+        /// <summary>
+        /// 監視タイマー処理
+        /// </summary>
+        private void setTimerA()
+        {
+            int count = 0;
+            int prevCount = -1;
+            int targetCount = 0;
+            if (timerA.Enabled)
+            {
+                timerA.Stop();
+            }
+            timerA.Elapsed += (sender, e) =>
+            {
+                Exe_logger.Info("[1A] (0) prevCount = " + prevCount);
+
+                // インターバルで実行
+                if (count >= intervalA)
+                {
+                    count = 0;
+
+                    Exe_logger.Info("[1A] execute timer");
+                    if (targetA != "")
+                    {
+                        try
+                        {
+                            // pdfファイルの取得
+                            string[] files = Directory.GetFiles(targetA, "*.pdf");
+
+                            Exe_logger.Info("[1A] execute timer (" + files.Length.ToString() + ")");
+
+                            // ファイル数の変化なしの確認
+                            targetCount = files.Length;
+#if DEBUG
+                            Console.WriteLine("[1A] lastTargetCount = " + lastTargetCount);
+                            Console.WriteLine("[1A] targetCount = " + targetCount);
+                            Console.WriteLine("[1A] prevCount = " + prevCount);
+#endif
+
+                            Exe_logger.Info("[1A] lastTargetCount = " + lastTargetCount);
+                            Exe_logger.Info("[1A] targetCount = " + targetCount);
+                            Exe_logger.Info("[1A] prevCount = " + prevCount);
+
+                            if (prevCount != -1 && targetCount != 0 && prevCount == targetCount && targetCount != lastTargetCount)
+                            {
+#if DEBUG
+#else
+                                Exe_logger.Warn("[1] lastTargetCount = " + lastTargetCount);
+                                Exe_logger.Warn("[1] targetCount = " + targetCount);
+                                Exe_logger.Warn("[1] prevCount = " + prevCount);
+#endif
+
+                                timerA.Stop();
+
+                                // 実行処理
+                                for (int i = 0; i < files.Length; i++)
+                                {
+                                    string filename = Path.GetFileNameWithoutExtension(files[i]);
+
+                                    string command = this.execA.Replace("%target%", files[i]).Replace("%filename%", filename).Replace("%output%", this.outputA);
+                                    string command2 = this.execA.Replace("%target%", files[i]).Replace("%filename%", filename).Replace("%output%", this.cacheA);
+                                    string command3 = "del " + files[i];
+
+                                    this.executeCommand(command, command2, command3);
+                                }
+
+
+                                Exe_logger.Info("[1A] (3) targetCount = " + targetCount);
+                                prevCount = targetCount;
+                                Exe_logger.Info("[1A] (3) prevCount = " + prevCount);
+
+                                timerA.Start();
+                            }
+                            if (prevCount != 0 && targetCount == 0)
+                            {
+#if DEBUG
+                                Console.WriteLine("[1A] break sub");
+#endif
+
+                                Exe_logger.Info("[1A] (4) targetCount = " + targetCount);
+                                prevCount = targetCount;
+                                Exe_logger.Info("[1A] (4) prevCount = " + prevCount);
+                                lastTargetCount = targetCount;
+                                Exe_logger.Info("[1A] (4) lastTargetCount = " + lastTargetCount);
+
+                            }
+                            prevCount = targetCount;
+                        }
+                        catch (Exception ex)
+                        {
+                            Exe_logger.Error("[1A] exception error : " + ex);
+
+                            timerA.Start();
+                        }
+                    }
+                }
+                else
+                {
+                    count++;
+                }
+            };
+            timerA.Start();
+        }
+
+        private void setTimer2A()
+        {
+            int count = 0;
+            int prevCount = -1;
+            int targetCount = 0;
+            if (timer2A.Enabled)
+            {
+                timer2A.Stop();
+            }
+            timer2A.Elapsed += (sender, e) =>
+            {
+                Exe_logger.Info("[2A] (0) prevCount = " + prevCount);
+
+                // インターバルで実行
+                if (count >= intervalA)
+                {
+                    count = 0;
+
+                    Exe_logger.Info("[2A] execute timer");
+                    if (target2A != "")
+                    {
+                        try
+                        {
+                            // pdfファイルの取得
+                            string[] files = Directory.GetFiles(target2A, "*.pdf");
+
+                            Exe_logger.Info("[2A] execute timer (" + files.Length.ToString() + ")");
+
+                            // ファイル数の変化なしの確認
+                            targetCount = files.Length;
+#if DEBUG
+                            Console.WriteLine("[2A] lastTargetCount2 = " + lastTargetCount2);
+                            Console.WriteLine("[2A] targetCount = " + targetCount);
+                            Console.WriteLine("[2A] prevCount = " + prevCount);
+#endif
+                            Exe_logger.Info("[2A] lastTargetCount2 = " + lastTargetCount2);
+                            Exe_logger.Info("[2A] targetCount = " + targetCount);
+                            Exe_logger.Info("[2A] prevCount = " + prevCount);
+
+                            if (prevCount != -1 && targetCount != 0 && prevCount == targetCount && targetCount != lastTargetCount2)
+                            {
+#if DEBUG
+#else
+                                Exe_logger.Warn("[2] lastTargetCount2 = " + lastTargetCount2);
+                                Exe_logger.Warn("[2] targetCount = " + targetCount);
+                                Exe_logger.Warn("[2] prevCount = " + prevCount);
+#endif
+                                timer2A.Stop();
+
+                                // 実行処理
+                                // 実行処理
+                                for (int i = 0; i < files.Length; i++)
+                                {
+                                    string filename = Path.GetFileNameWithoutExtension(files[i]);
+
+                                    string command = this.execA.Replace("%target%", files[i]).Replace("%filename%", filename).Replace("%output%", this.output2A);
+                                    string command2 = this.execA.Replace("%target%", files[i]).Replace("%filename%", filename).Replace("%output%", this.cache2A);
+                                    string command3 = "del " + files[i];
+
+                                    this.executeCommand(command, command2, command3);
+                                }
+
+                                Exe_logger.Info("[2A] (3) targetCount = " + targetCount);
+                                prevCount = targetCount;
+                                Exe_logger.Info("[2A] (3) prevCount = " + prevCount);
+
+                                timer2A.Start();
+                            }
+                            if (prevCount != 0 && targetCount == 0)
+                            {
+#if DEBUG
+                                Console.WriteLine("[2A] break sub");
+#endif
+
+                                Exe_logger.Info("[2A] (4) targetCount = " + targetCount);
+                                prevCount = targetCount;
+                                Exe_logger.Info("[2A] (4) prevCount = " + prevCount);
+                                lastTargetCount2 = targetCount;
+                                Exe_logger.Info("[2A] (3) lastTargetCount2 = " + lastTargetCount2);
+
+                            }
+                            prevCount = targetCount;
+                        }
+                        catch (Exception ex)
+                        {
+                            Exe_logger.Error("[2A] exception error : " + ex);
+
+                            timer2A.Start();
+                        }
+                    }
+                }
+                else
+                {
+                    count++;
+                }
+            };
+            timer2A.Start();
+        }
+
+        private void setTimer3A()
+        {
+            int count = 0;
+            int prevCount = -1;
+            int targetCount = 0;
+            if (timer3A.Enabled)
+            {
+                timer3A.Stop();
+            }
+            timer3A.Elapsed += (sender, e) =>
+            {
+                Exe_logger.Info("[3A] (0) prevCount = " + prevCount);
+
+                // インターバルで実行
+                if (count >= intervalA)
+                {
+                    count = 0;
+
+                    Exe_logger.Info("[3A] execute timer");
+                    if (target3A != "")
+                    {
+                        try
+                        {
+                            // pdfファイルの取得
+                            string[] files = Directory.GetFiles(target3A, "*.pdf");
+
+                            Exe_logger.Info("[3A] execute timer (" + files.Length.ToString() + ")");
+
+                            // ファイル数の変化なしの確認
+                            targetCount = files.Length;
+#if DEBUG
+                            Console.WriteLine("[3A] lastTargetCount3 = " + lastTargetCount3);
+                            Console.WriteLine("[3A] targetCount = " + targetCount);
+                            Console.WriteLine("[3A] prevCount = " + prevCount);
+#endif
+                            Exe_logger.Info("[3A] lastTargetCount3 = " + lastTargetCount3);
+                            Exe_logger.Info("[3A] targetCount = " + targetCount);
+                            Exe_logger.Info("[3A] prevCount = " + prevCount);
+
+                            if (prevCount != -1 && targetCount != 0 && prevCount == targetCount && targetCount != lastTargetCount3)
+                            {
+#if DEBUG
+#else
+                                Exe_logger.Warn("[3] lastTargetCount3 = " + lastTargetCount3);
+                                Exe_logger.Warn("[3] targetCount = " + targetCount);
+                                Exe_logger.Warn("[3] prevCount = " + prevCount);
+#endif
+
+                                timer3A.Stop();
+
+                                // 実行処理
+                                // 実行処理
+                                for (int i = 0; i < files.Length; i++)
+                                {
+                                    string filename = Path.GetFileNameWithoutExtension(files[i]);
+
+                                    string command = this.execA.Replace("%target%", files[i]).Replace("%filename%", filename).Replace("%output%", this.output3A);
+                                    string command2 = this.execA.Replace("%target%", files[i]).Replace("%filename%", filename).Replace("%output%", this.cache3A);
+                                    string command3 = "del " + files[i];
+
+                                    this.executeCommand(command, command2, command3);
+                                }
+
+                                Exe_logger.Info("[3A] (3) targetCount = " + targetCount);
+                                prevCount = targetCount;
+                                Exe_logger.Info("[3A] (3) prevCount = " + prevCount);
+
+                                timer3A.Start();
+                            }
+                            if (prevCount != 0 && targetCount == 0)
+                            {
+#if DEBUG
+                                Console.WriteLine("[3A] break sub");
+#endif
+
+                                Exe_logger.Info("[3A] (4) targetCount = " + targetCount);
+                                prevCount = targetCount;
+                                Exe_logger.Info("[3A] (4) prevCount = " + prevCount);
+                                lastTargetCount3 = targetCount;
+                                Exe_logger.Info("[3A] (3) lastTargetCount3 = " + lastTargetCount3);
+
+                            }
+                            prevCount = targetCount;
+                        }
+                        catch (Exception ex)
+                        {
+                            Exe_logger.Error("[3A] exception error : " + ex);
+
+                            timer3A.Start();
+                        }
+                    }
+                }
+                else
+                {
+                    count++;
+                }
+            };
+            timer3A.Start();
+        }
+
+
         
         /// <summary>
         /// 監視タイマー処理
@@ -1217,6 +1618,20 @@ namespace PacenotesTaskTray
                     this.notification = setting.NotificationUrl;
                     this.command = setting.Command;
                     this.args = setting.Args;
+
+                    this.intervalA = setting.IntervalA;
+                    this.targetA = setting.TargetA;
+                    this.target2A = setting.Target2A;
+                    this.target3A = setting.Target3A;
+                    this.cacheA = setting.CacheA;
+                    this.cache2A = setting.Cache2A;
+                    this.cache3A = setting.Cache3A;
+                    this.outputA = setting.OutputA;
+                    this.output2A = setting.Output2A;
+                    this.output3A = setting.Output3A;
+                    this.execA = setting.ExecA;
+                    this.exec2A = setting.Exec2A;
+                    this.exec3A = setting.Exec3A;
                 }
             }
         }
@@ -1233,6 +1648,10 @@ namespace PacenotesTaskTray
             this.setTimer();
             this.setTimer2();
             this.setTimer3();
+
+            this.setTimerA();
+            this.setTimer2A();
+            this.setTimer3A();
         }
 
         /// <summary>
